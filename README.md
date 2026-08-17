@@ -4,15 +4,15 @@
 
 ## 先选一种使用方式
 
-### 方式 A：直接使用在线编辑器
+### 方式 A：直接使用在线工作台
 
-适合已经有 `resume-data.json`，只想修改文字、顺序、字号并重新导出 PDF 的用户。
+适合希望先在网页中梳理经历与目标 JD，逐轮回答深度追问，再把结果交给完整 Skill 生成简历的用户；已有 `resume-data.json` 也可以直接进入编辑器修改并重新导出 PDF。
 
 ```text
 https://你的用户名.github.io/仓库名/
 ```
 
-所有简历数据只在当前浏览器中处理，不上传服务器。
+所有求职材料、回答和简历数据只在当前浏览器中处理，不上传服务器。
 
 ### 方式 B：安装完整 Skill
 
@@ -57,9 +57,18 @@ $CODEX_HOME/skills/sushen-resume-maker
 - **前端保持一致**：固定复用仓库内的 ASU 模板，不把审计分数或分析看板画进简历。
 - **生成后还能改**：GitHub Pages 在线编辑器支持导入 JSON、实时预览、自动保存、撤销重做，并重新导出 HTML/PDF。
 
-## 在线编辑器
+## 在线深度拷打与编辑器
 
-仓库首页会自动进入 `editor/`。编辑器支持：
+仓库首页会自动进入 `interrogation/`。在线深度拷打台支持：
+
+- 输入目标 JD 与原始经历材料；
+- 把材料拆成原子 Claim，并识别强角色词、指标、团队归因和项目状态风险；
+- 每轮只提出 1–3 个高价值问题，允许随时停止追问并降级处理；
+- 生成 Claim Ledger、JD Matrix 与 Interview Defense；
+- 下载三个结构化 JSON，或一键复制给 `$sushen-resume-maker` 的完整交接指令；
+- 将拷打结果带到简历编辑器查看和继续处理。
+
+`editor/` 简历编辑器支持：
 
 - 导入 Skill 生成的 `resume-data.json`；
 - 结构化编辑基本信息、教育、经历、项目、奖项和技能；
@@ -69,7 +78,7 @@ $CODEX_HOME/skills/sushen-resume-maker
 - 浏览器本地自动保存、撤销与重做；
 - 下载 JSON、HTML，或通过打印重新导出 PDF。
 
-候选人数据仅在浏览器本地处理，不会被提交到 GitHub 仓库或上传至服务器。
+在线拷打采用本地规则引擎，不冒充 AI 生成器：它负责提问、事实分层和安全初筛；最终定向改写、ASU 排版与 PDF 由完整 Skill 基于校验通过的 JSON 完成。候选人数据不会被提交到 GitHub 仓库或上传至服务器。
 
 ## 主要输出
 
@@ -123,9 +132,7 @@ https://你的用户名.github.io/仓库名/
 发布时只需要分享两个地址：
 
 1. GitHub 仓库：安装 Skill、阅读说明和下载 Release；
-2. GitHub Pages：不安装也能使用的在线编辑器。
-
-仓库内的 [小红书发布素材](docs/xiaohongshu-launch-kit.md) 已包含可直接使用的标题、正文、置顶评论、图片页结构和发布检查清单。
+2. GitHub Pages：不安装也能使用的在线深度拷打台与简历编辑器。
 
 ## 仓库结构
 
@@ -155,6 +162,11 @@ editor/
 ├── app.js
 ├── styles.css
 └── sample.resume.json
+
+interrogation/
+├── index.html
+├── app.js
+└── styles.css
 ```
 
 ## 本地校验

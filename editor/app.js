@@ -4,6 +4,7 @@
   const TEMPLATE_URL = "../skills/sushen-resume-maker/assets/resume_template.html";
   const SAMPLE_URL = "sample.resume.json";
   const STORAGE_KEY = "sushen-resume-editor-v1";
+  const HANDOFF_KEY = "sushen-evidence-handoff-v1";
   const MAX_HISTORY = 60;
 
   const editorPanel = document.getElementById("editorPanel");
@@ -19,6 +20,7 @@
   let templateHtml = "";
   let sampleData = null;
   let data = null;
+  let handoff = null;
   let activeTab = "profile";
   let history = [];
   let historyIndex = -1;
@@ -422,12 +424,70 @@
     editorPanel.append(textarea, actions, element("div", { className: "inline-warning", text: "在线修改不会自动补充证据。新增指标、Owner、主导、上线或0→1等强表述后，应重新运行 Skill 校验。" }));
   }
 
+  function handoffStat(value, label) {
+    const block = element("div", { className: "handoff-stat" });
+    block.append(element("strong", { text: String(value) }), element("span", { text: label }));
+    return block;
+  }
+
+  function renderInterrogation() {
+    if (!handoff) {
+      editorPanel.append(element("div", { className: "inline-warning", text: "还没有在线拷打结果。先完成 JD 输入、定向追问、Claim Ledger 和面试防御，再回到这里继续编辑简历。" }));
+      const go = element("button", { className: "button primary", text: "去深度拷打", type: "button" });
+      go.addEventListener("click", () => { window.location.href = "../interrogation/"; });
+      editorPanel.append(element("div", { className: "json-actions" }, [go]));
+      return;
+    }
+    const ledger = handoff.ledger || {};
+    const matrix = handoff.matrix || {};
+    const defense = handoff.defense || {};
+    const selected = matrix.selection?.selected_claim_ids || [];
+    const summary = element("div", { className: "handoff-summary" });
+    summary.append(
+      handoffStat((ledger.claims || []).length, "Claim 总数"),
+      handoffStat(selected.length, "可用候选 Claim"),
+      handoffStat(`${matrix.summary?.weighted_coverage || 0}%`, "JD 证据覆盖")
+    );
+    editorPanel.append(summary);
+    const target = element("section", { className: "section-card tint-blue" });
+    target.append(element("div", { className: "card-head" }, [element("h3", { text: "目标岗位与证据交接" })]));
+    target.append(element("p", { className: "panel-intro", text: `${handoff.target?.company || ""} ${handoff.target?.title || "目标岗位"}`.trim() }));
+    target.append(element("div", { className: "inline-warning", text: "拷打结果不会自动改写简历正文。请先把三个 JSON 交给 $sushen-resume-maker 生成 resume-data.json，再导入本编辑器；这样可以避免规则引擎把相关性误写成事实。" }));
+    editorPanel.append(target);
+    (defense.questions || []).slice(0, 5).forEach((question, index) => {
+      const card = element("div", { className: "defense-mini" });
+      card.append(element("strong", { text: `${index + 1}. ${question.primary_question}` }));
+      card.append(element("p", { text: `安全边界：${question.safe_boundary}` }));
+      editorPanel.append(card);
+    });
+    const actions = element("div", { className: "json-actions" });
+    [
+      ["下载 Claim Ledger", "claim-ledger.json", ledger],
+      ["下载 JD Matrix", "jd-matrix.json", matrix],
+      ["下载面试防御", "interview-defense.json", defense]
+    ].forEach(([label, filename, value]) => {
+      const item = element("button", { className: "button", text: label, type: "button" });
+      item.addEventListener("click", () => download(filename, JSON.stringify(value, null, 2), "application/json;charset=utf-8"));
+      actions.append(item);
+    });
+    const clear = element("button", { className: "button", text: "清除拷打交接", type: "button" });
+    clear.addEventListener("click", () => {
+      localStorage.removeItem(HANDOFF_KEY);
+      handoff = null;
+      renderEditor();
+      showToast("拷打交接已清除");
+    });
+    actions.append(clear);
+    editorPanel.append(actions);
+  }
+
   function renderEditor() {
     editorPanel.replaceChildren();
     if (activeTab === "profile") renderProfile();
     else if (activeTab === "education") renderEducation();
     else if (activeTab === "experience") renderExperience();
     else if (activeTab === "extras") renderExtras();
+    else if (activeTab === "interrogation") renderInterrogation();
     else renderJson();
   }
 
@@ -559,6 +619,8 @@
       sampleData = await sampleResponse.json();
       if (!templateHtml.includes("__RESUME_JSON__")) throw new Error("ASU 模板缺少数据占位符");
       const stored = localStorage.getItem(STORAGE_KEY);
+      try { handoff = JSON.parse(localStorage.getItem(HANDOFF_KEY)); }
+      catch (_) { handoff = null; }
       if (stored) {
         try { data = normalizeData(JSON.parse(stored)); }
         catch (_) { data = normalizeData(sampleData); }

@@ -2,6 +2,18 @@
 
 在线编辑器不直接修改 PDF 二进制文件。把 `resume-data.json` 作为唯一可持续编辑的内容源，使用同一份 `assets/resume_template.html` 实时渲染并重新导出 HTML/PDF。
 
+## 在线深度拷打台
+
+GitHub Pages 根目录先进入 `interrogation/`，再进入 `editor/`。拷打台在浏览器本地完成：
+
+1. 输入目标 JD 与经历文本；
+2. 按每轮 1–3 题确认角色、指标、交付状态与岗位缺口；
+3. 人工确认 Claim 的验证状态、个人角色和时态；
+4. 导出 `claim-ledger.json`、`jd-matrix.json` 与 `interview-defense.json`；
+5. 把三个 JSON 交给 Skill 校验并生成 `resume-data.json`，再进入编辑器。
+
+纯静态页面不得声称能够调用 AI 完成事实判断或简历改写。自动关键词匹配只能标记为安全初筛；默认使用 `transferable`、`weak` 或 `gap`，不能把相关词命中自动升级为直接强匹配。
+
 ## Skill 交付要求
 
 每次生成简历时同时交付：

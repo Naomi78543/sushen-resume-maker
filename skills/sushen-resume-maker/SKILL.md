@@ -104,6 +104,8 @@ python scripts/validate_resume.py \
 - 保持 `verification`、`source_note` 和 `claim_ids`，避免在线修改后失去证据映射。
 - 用户在线新增数字、Owner、主导、0→1、上线或跨市场表述后，提示重新运行事实与面试防御校验。
 - 默认使用浏览器本地存储，不要求上传候选人数据。
+- 仓库包含 `interrogation/` 在线深度拷打台：用于本地完成 JD 输入、分轮追问、Claim 确认、JD Matrix 初筛和 Interview Defense 导出。
+- 在线拷打台是规则化事实整理界面，不得把自动关键词匹配解释为 AI 判断或直接事实；最终简历仍须读取并校验三个 JSON 后生成。
 
 ## 7. 生成面试防御层
 
