@@ -1,0 +1,92 @@
+name: Validate skill
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Parse Python scripts
+        run: |
+          python - <<'PY'
+          import ast
+          from pathlib import Path
+
+          scripts = Path("skills/sushen-resume-maker/scripts")
+          for path in scripts.glob("*.py"):
+              ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
+          print("Python syntax validation passed")
+          PY
+
+      - name: Validate repository structure and metadata
+        run: |
+          python - <<'PY'
+          import json
+          import re
+          from pathlib import Path
+
+          root = Path("skills/sushen-resume-maker")
+          required = [
+              Path("README.md"),
+              Path("LICENSE"),
+              Path("THIRD_PARTY_NOTICES.md"),
+              Path("docs/xiaohongshu-launch-kit.md"),
+              Path("index.html"),
+              Path("editor/index.html"),
+              Path("editor/app.js"),
+              Path("editor/styles.css"),
+              Path("editor/sample.resume.json"),
+              root / "SKILL.md",
+              root / "agents/openai.yaml",
+              root / "assets/resume_template.html",
+              root / "evals/evals.json",
+              root / "references/claim-ledger-schema.md",
+              root / "references/jd-matrix-schema.md",
+              root / "references/interview-defense-schema.md",
+              root / "references/online-editor-contract.md",
+              root / "scripts/validate_claim_ledger.py",
+              root / "scripts/validate_jd_matrix.py",
+              root / "scripts/validate_interview_defense.py",
+          ]
+          missing = [str(path) for path in required if not path.is_file()]
+          if missing:
+              raise SystemExit("Missing required files: " + ", ".join(missing))
+
+          skill = (root / "SKILL.md").read_text(encoding="utf-8")
+          frontmatter = re.match(r"^---\n(.*?)\n---", skill, re.S)
+          if not frontmatter:
+              raise SystemExit("SKILL.md frontmatter is invalid")
+          if not re.search(r"(?m)^name:\s*sushen-resume-maker\s*$", frontmatter.group(1)):
+              raise SystemExit("Skill name is invalid")
+          if not re.search(r"(?m)^description:\s*.+$", frontmatter.group(1)):
+              raise SystemExit("Skill description is missing")
+
+          evals = json.loads((root / "evals/evals.json").read_text(encoding="utf-8"))
+          if evals.get("skill_name") != "sushen-resume-maker":
+              raise SystemExit("evals.json skill_name is invalid")
+          print("Repository validation passed")
+          PY
+
+      - name: Validate editor JavaScript and sample data
+        run: |
+          node --check editor/app.js
+          python -m json.tool editor/sample.resume.json > /dev/null
+
+      - name: Reject generated files and Python caches
+        run: |
+          if find . -type d -name __pycache__ -print -quit | grep -q .; then
+            echo "__pycache__ must not be committed"
+            exit 1
+          fi
+          if find . -type f \( -name '*.pyc' -o -name '*.pdf' \) -print -quit | grep -q .; then
+            echo "Generated files must not be committed"
+            exit 1
+          fi
