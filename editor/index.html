@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="description" content="在浏览器本地编辑酥神 ASU 风格简历，并重新导出 JSON、HTML 与 PDF。">
+  <title>酥神简历在线编辑器</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <span class="brand-mark" aria-hidden="true">酥</span>
+      <div>
+        <h1>酥神简历在线编辑器</h1>
+        <p>编辑源数据，实时生成同款 ASU 简历</p>
+      </div>
+    </div>
+    <div class="privacy-badge" title="数据只保存在当前浏览器中">
+      <span class="privacy-dot"></span>
+      本地处理 · 不上传服务器
+    </div>
+  </header>
+
+  <nav class="actionbar" aria-label="文件与编辑操作">
+    <div class="action-group">
+      <button id="importButton" class="button primary" type="button">导入 JSON</button>
+      <button id="loadSampleButton" class="button" type="button">载入示例</button>
+      <input id="fileInput" type="file" accept="application/json,.json" hidden>
+    </div>
+    <div class="action-group">
+      <button id="undoButton" class="button icon-button" type="button" aria-label="撤销" title="撤销 Ctrl+Z">↶</button>
+      <button id="redoButton" class="button icon-button" type="button" aria-label="重做" title="重做 Ctrl+Shift+Z">↷</button>
+      <span id="saveState" class="save-state">已在本地保存</span>
+    </div>
+    <div class="action-group export-group">
+      <button id="downloadJsonButton" class="button" type="button">下载 JSON</button>
+      <button id="downloadHtmlButton" class="button" type="button">下载 HTML</button>
+      <button id="printButton" class="button accent" type="button">打印 / 导出 PDF</button>
+    </div>
+  </nav>
+
+  <main class="workspace">
+    <aside class="editor-shell" aria-label="简历内容编辑区">
+      <div class="editor-heading">
+        <div>
+          <span class="eyebrow">STRUCTURED EDITOR</span>
+          <h2>简历内容</h2>
+        </div>
+        <button id="clearLocalButton" class="text-button danger" type="button">清除本地草稿</button>
+      </div>
+
+      <div class="tabs" role="tablist" aria-label="简历分区">
+        <button class="tab is-active" type="button" data-tab="profile" role="tab">基本信息</button>
+        <button class="tab" type="button" data-tab="education" role="tab">教育</button>
+        <button class="tab" type="button" data-tab="experience" role="tab">经历</button>
+        <button class="tab" type="button" data-tab="extras" role="tab">项目技能</button>
+        <button class="tab" type="button" data-tab="json" role="tab">JSON</button>
+      </div>
+
+      <div id="editorPanel" class="editor-panel"></div>
+    </aside>
+
+    <section class="preview-shell" aria-label="简历实时预览">
+      <div class="preview-toolbar">
+        <div>
+          <span class="eyebrow">LIVE PREVIEW</span>
+          <h2>ASU 前端预览</h2>
+        </div>
+        <div class="preview-meta">
+          <span id="pageStatus" class="page-status">正在计算分页…</span>
+          <label class="zoom-control">缩放
+            <select id="zoomSelect" aria-label="预览缩放比例">
+              <option value="0.65">65%</option>
+              <option value="0.8" selected>80%</option>
+              <option value="1">100%</option>
+            </select>
+          </label>
+        </div>
+      </div>
+      <div id="previewViewport" class="preview-viewport">
+        <iframe id="previewFrame" title="ASU 简历预览" sandbox="allow-same-origin allow-scripts allow-modals"></iframe>
+      </div>
+    </section>
+  </main>
+
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+  <script src="app.js" defer></script>
+</body>
+</html>

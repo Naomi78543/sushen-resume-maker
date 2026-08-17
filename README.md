@@ -1,0 +1,185 @@
+# 酥神简历制作与面试防御 Skill
+
+一个证据优先的中文求职 Skill：使用固定的 ASU 高密度简历前端，在生成前深挖经历、校验事实并匹配目标 JD，在生成后为简历中的强表述、指标和岗位缺口生成面试问题与回答边界。
+
+## 先选一种使用方式
+
+### 方式 A：直接使用在线编辑器
+
+适合已经有 `resume-data.json`，只想修改文字、顺序、字号并重新导出 PDF 的用户。
+
+```text
+https://你的用户名.github.io/仓库名/
+```
+
+所有简历数据只在当前浏览器中处理，不上传服务器。
+
+### 方式 B：安装完整 Skill
+
+适合希望完成“深度拷打 → 事实校验 → JD 定向简历 → 面试问题 → 在线修改”的用户。
+
+在 Codex 中输入：
+
+```text
+使用 $skill-installer 安装：
+https://github.com/你的用户名/仓库名/tree/main/skills/sushen-resume-maker
+```
+
+也可以下载 GitHub Release 中的 `sushen-resume-maker-skill.zip`，解压到：
+
+```text
+$CODEX_HOME/skills/sushen-resume-maker
+```
+
+安装后可以这样使用：
+
+```text
+使用 $sushen-resume-maker，读取我的原始简历和目标 JD：
+先做深度拷打与证据校验，再生成 ASU 风格简历、在线编辑源文件和面试问题清单。
+```
+
+## 它和普通简历 Skill 的区别
+
+普通流程通常是“读取简历 → 润色 → 排版”。本项目采用：
+
+```text
+读取材料
+  → Claim Ledger 事实台账
+  → JD Matrix 岗位矩阵
+  → 定向拷打与补证
+  → ASU 前端简历
+  → Interview Defense 面试防御
+```
+
+- **不靠编故事提高匹配度**：团队结果、个人动作、项目状态和数据归因分开记录。
+- **不把相近经历包装成直接经验**：跨市场、跨行业和跨合作对象的迁移边界会保留。
+- **不只生成简历**：自动生成主问题、压力追问、面试官意图、回答骨架、证据准备和安全边界。
+- **前端保持一致**：固定复用仓库内的 ASU 模板，不把审计分数或分析看板画进简历。
+- **生成后还能改**：GitHub Pages 在线编辑器支持导入 JSON、实时预览、自动保存、撤销重做，并重新导出 HTML/PDF。
+
+## 在线编辑器
+
+仓库首页会自动进入 `editor/`。编辑器支持：
+
+- 导入 Skill 生成的 `resume-data.json`；
+- 结构化编辑基本信息、教育、经历、项目、奖项和技能；
+- 增删、排序经历和 bullet；
+- 实时复用同一份 ASU 模板预览；
+- A4 分页溢出提示；
+- 浏览器本地自动保存、撤销与重做；
+- 下载 JSON、HTML，或通过打印重新导出 PDF。
+
+候选人数据仅在浏览器本地处理，不会被提交到 GitHub 仓库或上传至服务器。
+
+## 主要输出
+
+| 文件 | 用途 |
+| --- | --- |
+| `claim-ledger.json` | 拆解原子事实、来源、角色、指标、冲突与证据缺口 |
+| `jd-matrix.json` | 拆解岗位要求、匹配证据、识别高权重缺口 |
+| `resume-data.json` | 与 ASU 前端对应的结构化简历数据 |
+| `resume.html` | 自包含 ASU 风格网页简历 |
+| `resume.pdf` | A4 PDF 简历 |
+| `interview-defense.json` | 可校验的结构化面试问题库 |
+| `面试问题清单.md` | 面试前直接使用的问题、证据和回答边界 |
+
+## 安装
+
+将 [`skills/sushen-resume-maker`](skills/sushen-resume-maker) 目录复制到 Codex Skills 目录：
+
+```text
+$CODEX_HOME/skills/sushen-resume-maker
+```
+
+也可以把 GitHub 仓库地址交给 Codex，并要求安装其中的 `skills/sushen-resume-maker`。
+
+## 启用 GitHub Pages
+
+1. 把仓库上传到 GitHub，默认分支设为 `main`。
+2. 进入仓库 **Settings → Pages**。
+3. 在 **Build and deployment** 中选择 **GitHub Actions**。
+4. 推送一次 `main`；`Deploy editor to GitHub Pages` 工作流会发布编辑器。
+
+部署后的地址通常是：
+
+```text
+https://你的用户名.github.io/仓库名/
+```
+
+## 使用示例
+
+```text
+使用 $sushen-resume-maker，基于我的原始简历和目标 JD：
+1. 建立 Claim Ledger 和 JD Matrix；
+2. 对高价值缺口进行深度追问；
+3. 用固定 ASU 前端生成中文简历；
+4. 生成面试官可能追问的问题、压力追问和安全回答边界。
+```
+
+如果不希望继续追问，可以明确说“不要追问，基于现有证据生成”。Skill 会降低或排除证据不足的表述，不会自行补充事实。
+
+## 分享给其他人
+
+发布时只需要分享两个地址：
+
+1. GitHub 仓库：安装 Skill、阅读说明和下载 Release；
+2. GitHub Pages：不安装也能使用的在线编辑器。
+
+仓库内的 [小红书发布素材](docs/xiaohongshu-launch-kit.md) 已包含可直接使用的标题、正文、置顶评论、图片页结构和发布检查清单。
+
+## 仓库结构
+
+```text
+skills/sushen-resume-maker/
+├── SKILL.md
+├── agents/openai.yaml
+├── assets/resume_template.html
+├── evals/evals.json
+├── references/
+│   ├── claim-ledger-schema.md
+│   ├── jd-matrix-schema.md
+│   ├── interview-defense-schema.md
+│   ├── question-tree.md
+│   ├── evidence-and-roles.md
+│   ├── resume-schema.md
+│   └── style-guide.md
+└── scripts/
+    ├── render_resume.py
+    ├── validate_resume.py
+    ├── validate_claim_ledger.py
+    ├── validate_jd_matrix.py
+    └── validate_interview_defense.py
+
+editor/
+├── index.html
+├── app.js
+├── styles.css
+└── sample.resume.json
+```
+
+## 本地校验
+
+```bash
+python skills/sushen-resume-maker/scripts/validate_claim_ledger.py claim-ledger.json
+
+python skills/sushen-resume-maker/scripts/validate_jd_matrix.py \
+  jd-matrix.json --ledger claim-ledger.json
+
+python skills/sushen-resume-maker/scripts/validate_interview_defense.py \
+  interview-defense.json \
+  --ledger claim-ledger.json \
+  --matrix jd-matrix.json
+```
+
+生成 PDF 需要 `reportlab`；PDF 完整性检查可选用 `pypdf`。
+
+## 隐私与真实性
+
+- 不要把含手机号、邮箱、住址、后台截图或未脱敏业务数据的测试案例提交到公开仓库。
+- 只有 `source_grounded` 或 `user_attested` 的内容可以进入求职简历。
+- 未解决冲突、未知事实和未标注的规划内容不得进入最终简历。
+- 面试问题清单提供回答结构，不生成未经确认的“标准答案”。
+
+## 许可证说明
+
+本项目以 [MIT License](LICENSE) 发布。生成与审计设计参考了 [Claycui828/ASu-resume-skills](https://github.com/Claycui828/ASu-resume-skills)，前端结构与模板约定参考了 [Hisn00w/ASu-skills](https://github.com/Hisn00w/ASu-skills)；两者均使用 MIT License，原始版权声明见 [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md)。

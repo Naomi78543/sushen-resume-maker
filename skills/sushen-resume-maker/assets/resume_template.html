@@ -1,0 +1,385 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>ASU 风格技术简历</title>
+  <style>
+    :root {
+      --ivory: #faf9f5;
+      --slate: #141413;
+      --clay: #d97757;
+      --oat: #e3dacc;
+      --olive: #788c5d;
+      --gray-100: #f0eee6;
+      --gray-300: #d1cfc5;
+      --gray-500: #87867f;
+      --gray-700: #3d3d3a;
+      --ink-blue: #245579;
+      --link-blue: #366f96;
+      --paper: #fffefa;
+      --red-bar: #f8e8e3;
+      --blue-bar: #e5f1f5;
+      --green-bar: #eaf1e5;
+      --gray-bar: #efeee9;
+      --serif: Georgia, "Noto Serif CJK SC", "Songti SC", STSong, serif;
+      --sans: Inter, ui-sans-serif, system-ui, -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif;
+      --mono: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+    }
+
+    * { box-sizing: border-box; }
+
+    html { background: var(--gray-100); }
+
+    body {
+      margin: 0;
+      color: var(--slate);
+      background: var(--gray-100);
+      font-family: var(--sans);
+      font-size: 11px;
+      line-height: 1.48;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    a { color: var(--link-blue); text-decoration: none; border-bottom: 1px solid rgba(54,111,150,.28); }
+    a:hover { border-bottom-color: currentColor; }
+
+    .page {
+      width: 210mm;
+      min-height: 297mm;
+      margin: 14mm auto;
+      padding: 12mm 13mm 13mm;
+      background: var(--paper);
+      box-shadow: 0 12px 36px rgba(20,20,19,.12);
+    }
+
+    .masthead {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 8mm;
+      align-items: end;
+      padding-bottom: 5mm;
+      border-bottom: 2px solid var(--ink-blue);
+    }
+
+    .name {
+      margin: 0;
+      font-family: var(--serif);
+      font-size: 28px;
+      line-height: 1;
+      letter-spacing: .06em;
+      font-weight: 750;
+    }
+
+    .headline {
+      margin: 2.5mm 0 0;
+      color: var(--ink-blue);
+      font-family: var(--serif);
+      font-weight: 700;
+      font-size: 12px;
+      letter-spacing: .015em;
+    }
+
+    .contact {
+      display: flex;
+      max-width: 82mm;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+      gap: 1.5mm 3mm;
+      color: var(--gray-700);
+      font-size: 9.3px;
+      text-align: right;
+    }
+
+    .contact-item { white-space: nowrap; }
+    .contact-label { color: var(--gray-500); margin-right: 1mm; }
+
+    .section { margin-top: 5mm; }
+    .section-title {
+      display: flex;
+      align-items: center;
+      gap: 3mm;
+      margin: 0 0 2.5mm;
+      color: var(--ink-blue);
+      font-family: var(--serif);
+      font-size: 15px;
+      font-weight: 800;
+      line-height: 1.15;
+      letter-spacing: .035em;
+    }
+    .section-title::after {
+      content: "";
+      flex: 1;
+      height: 1px;
+      background: linear-gradient(90deg, var(--ink-blue), rgba(36,85,121,.08));
+    }
+
+    .education-row {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 4mm;
+      padding: 2.2mm 3mm;
+      border-left: 3px solid var(--ink-blue);
+      background: linear-gradient(90deg, #eef4f7 0%, rgba(238,244,247,.25) 82%, transparent 100%);
+      break-inside: avoid;
+    }
+    .education-row + .education-row { margin-top: 2mm; }
+    .education-main { min-width: 0; }
+    .education-school { color: var(--ink-blue); font-family: var(--serif); font-size: 12px; font-weight: 800; }
+    .education-program { margin-left: 2mm; font-weight: 650; }
+    .education-meta { margin-top: .8mm; color: var(--gray-700); font-size: 9.2px; }
+    .dates { white-space: nowrap; color: var(--gray-700); font-family: var(--mono); font-size: 9.5px; }
+
+    .experience { margin-bottom: 4mm; break-inside: auto; }
+    .company-bar {
+      display: grid;
+      grid-template-columns: minmax(0,1fr) auto;
+      align-items: center;
+      gap: 4mm;
+      min-height: 8.2mm;
+      padding: 1.6mm 3mm;
+      border-left: 4px solid var(--clay);
+      background: var(--red-bar);
+      break-after: avoid;
+    }
+    .company-bar.brand-blue { border-left-color: #4c8aa5; background: var(--blue-bar); }
+    .company-bar.brand-green { border-left-color: var(--olive); background: var(--green-bar); }
+    .company-bar.brand-gray { border-left-color: var(--gray-500); background: var(--gray-bar); }
+    .company-left { display: flex; align-items: baseline; min-width: 0; flex-wrap: wrap; gap: 1mm 2mm; }
+    .company-name { color: var(--ink-blue); font-family: var(--serif); font-size: 12.3px; font-weight: 850; }
+    .company-team { font-weight: 650; }
+    .company-tags { color: var(--gray-700); font-size: 9.2px; }
+    .company-right { display: flex; align-items: center; gap: 3mm; }
+    .company-link { font-size: 8.8px; white-space: nowrap; }
+
+    .project {
+      padding: 2.2mm 2mm 0 3.4mm;
+      border-left: 1px solid var(--gray-300);
+      margin-left: 1.7mm;
+      break-inside: avoid-page;
+    }
+    .project + .project { margin-top: 2.5mm; padding-top: 2.7mm; border-top: 1px dotted var(--gray-300); }
+    .project-title { font-family: var(--serif); font-size: 12px; font-weight: 850; color: #1f4d70; }
+    .project-subtitle { margin-left: 2mm; color: var(--gray-700); font-weight: 650; }
+
+    .fact-block { display: grid; grid-template-columns: 19mm minmax(0,1fr); gap: 1.8mm; margin-top: 1.1mm; }
+    .fact-label { color: var(--ink-blue); font-weight: 800; white-space: nowrap; }
+    .fact-content { min-width: 0; }
+    .fact-list { margin: 0; padding-left: 4.2mm; }
+    .fact-list li { margin: 0 0 .65mm; padding-left: .5mm; }
+    .fact-list li::marker { color: var(--gray-500); }
+    .keywords { color: var(--gray-700); font-family: var(--mono); font-size: 8.9px; overflow-wrap: anywhere; }
+
+    .cards { display: grid; grid-template-columns: 1fr; gap: 2.4mm; }
+    .card {
+      display: grid;
+      grid-template-columns: minmax(0,1fr) auto;
+      gap: 3mm;
+      padding: 2.4mm 3mm;
+      background: rgba(240,238,230,.48);
+      border-left: 3px solid var(--oat);
+      break-inside: avoid;
+    }
+    .card-title { font-family: var(--serif); color: var(--ink-blue); font-size: 11.5px; font-weight: 800; }
+    .card-role { margin-left: 1.5mm; color: var(--gray-700); font-weight: 650; }
+    .card-scope { margin-top: .7mm; color: var(--gray-700); }
+    .card .fact-list { margin-top: 1mm; }
+
+    .compact-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 3mm 6mm; }
+    .compact-item { break-inside: avoid; }
+    .award-line { display: flex; justify-content: space-between; gap: 3mm; padding: 1mm 0; border-bottom: 1px dotted var(--gray-300); }
+    .skill-list { display: flex; flex-wrap: wrap; gap: 1.4mm; }
+    .skill {
+      padding: .6mm 1.5mm;
+      border: 1px solid var(--gray-300);
+      background: var(--ivory);
+      border-radius: 2px;
+      font-family: var(--mono);
+      font-size: 8.9px;
+    }
+
+    .empty { color: var(--gray-500); font-style: italic; }
+
+    @page { size: A4; margin: 11mm 12mm 12mm; }
+    @media print {
+      html, body { background: white; }
+      body { font-size: 10.4px; }
+      .page { width: auto; min-height: auto; margin: 0; padding: 0; box-shadow: none; background: white; }
+      a { color: inherit; border-bottom: 0; }
+      .company-bar, .education-row, .card, .skill { print-color-adjust: exact; -webkit-print-color-adjust: exact; }
+      .section-title, .company-bar, .project-title { break-after: avoid; }
+    }
+
+    @media (max-width: 760px) {
+      .page { width: 100%; min-height: 0; margin: 0; padding: 20px 16px; }
+      .masthead { grid-template-columns: 1fr; align-items: start; }
+      .contact { justify-content: flex-start; text-align: left; max-width: none; }
+      .compact-grid { grid-template-columns: 1fr; }
+      .company-bar { grid-template-columns: 1fr; }
+      .company-right { justify-content: space-between; }
+    }
+  </style>
+</head>
+<body>
+  <main id="resume" class="page"></main>
+  <script id="resume-data" type="application/json">__RESUME_JSON__</script>
+  <script>
+    (() => {
+      'use strict';
+      const data = JSON.parse(document.getElementById('resume-data').textContent);
+      const root = document.getElementById('resume');
+      const el = (tag, cls, text) => {
+        const node = document.createElement(tag);
+        if (cls) node.className = cls;
+        if (text !== undefined && text !== null) node.textContent = String(text);
+        return node;
+      };
+      const safeUrl = value => {
+        try {
+          const u = new URL(value, window.location.href);
+          return ['http:', 'https:', 'mailto:'].includes(u.protocol) ? value : null;
+        } catch (_) { return null; }
+      };
+      const link = (label, url, cls) => {
+        const safe = safeUrl(url);
+        if (!safe) return el('span', cls || '', label);
+        const a = el('a', cls || '', label);
+        a.href = safe;
+        if (!safe.startsWith('mailto:')) { a.target = '_blank'; a.rel = 'noopener noreferrer'; }
+        return a;
+      };
+      const section = title => {
+        const wrap = el('section', 'section');
+        wrap.append(el('h2', 'section-title', title));
+        root.append(wrap);
+        return wrap;
+      };
+      const bulletList = items => {
+        const ul = el('ul', 'fact-list');
+        (items || []).forEach(item => ul.append(el('li', '', typeof item === 'string' ? item : item.text)));
+        return ul;
+      };
+      const factBlock = (labelText, content) => {
+        const block = el('div', 'fact-block');
+        block.append(el('div', 'fact-label', labelText));
+        const body = el('div', 'fact-content');
+        if (Array.isArray(content)) body.append(bulletList(content));
+        else if (content instanceof Node) body.append(content);
+        else body.textContent = content || '';
+        block.append(body);
+        return block;
+      };
+
+      const p = data.profile || {};
+      document.title = [p.name, p.headline].filter(Boolean).join('｜') || 'ASU 风格技术简历';
+      const masthead = el('header', 'masthead');
+      const identity = el('div', 'identity');
+      identity.append(el('h1', 'name', p.name || '姓名'));
+      identity.append(el('p', 'headline', p.headline || '技术方向'));
+      masthead.append(identity);
+      const contacts = el('div', 'contact');
+      if (p.location) contacts.append(el('span', 'contact-item', p.location));
+      (p.contacts || []).forEach(item => {
+        const wrap = el('span', 'contact-item');
+        if (item.label) wrap.append(el('span', 'contact-label', item.label));
+        wrap.append(link(item.value || item.label || '', item.url, ''));
+        contacts.append(wrap);
+      });
+      masthead.append(contacts);
+      root.append(masthead);
+
+      if ((data.education || []).length) {
+        const s = section('教育经历');
+        data.education.forEach(item => {
+          const row = el('div', 'education-row');
+          const main = el('div', 'education-main');
+          const head = el('div', '');
+          head.append(el('span', 'education-school', item.institution));
+          head.append(el('span', 'education-program', [item.program, item.degree].filter(Boolean).join('｜')));
+          main.append(head);
+          const meta = [];
+          if (item.degree_awarder) meta.push(`学位授予方：${item.degree_awarder}`);
+          if (item.partner) meta.push(`合作方：${item.partner}（${item.partner_type || '合作类型未说明'}）`);
+          if (meta.length) main.append(el('div', 'education-meta', meta.join('；')));
+          if ((item.bullets || []).length) main.append(bulletList(item.bullets));
+          row.append(main, el('div', 'dates', item.dates || ''));
+          s.append(row);
+        });
+      }
+
+      if ((data.experience || []).length) {
+        const s = section('实习 / 工作经历');
+        data.experience.forEach(exp => {
+          const wrap = el('article', 'experience');
+          const bar = el('div', `company-bar brand-${['red','blue','green','gray'].includes(exp.brand) ? exp.brand : 'gray'}`);
+          const left = el('div', 'company-left');
+          left.append(el('span', 'company-name', exp.company));
+          if (exp.team) left.append(el('span', 'company-team', `｜${exp.team}`));
+          if ((exp.tags || []).length) left.append(el('span', 'company-tags', `｜${exp.tags.join(' · ')}`));
+          const right = el('div', 'company-right');
+          right.append(el('span', 'dates', exp.dates || ''));
+          if (exp.link) right.append(link(exp.link.label || '相关链接', exp.link.url, 'company-link'));
+          bar.append(left, right);
+          wrap.append(bar);
+          (exp.projects || []).forEach(project => {
+            const block = el('div', 'project');
+            const title = el('div', '');
+            title.append(el('span', 'project-title', project.name));
+            if (project.subtitle) title.append(el('span', 'project-subtitle', `— ${project.subtitle}`));
+            block.append(title);
+            if ((project.background || []).length) block.append(factBlock('背景：', project.background));
+            if ((project.impact || []).length) block.append(factBlock('指标与效果：', project.impact));
+            if ((project.responsibilities || []).length) block.append(factBlock('我的职责：', project.responsibilities));
+            if ((project.keywords || []).length) block.append(factBlock('技术关键词：', el('div', 'keywords', project.keywords.join(' / '))));
+            wrap.append(block);
+          });
+          s.append(wrap);
+        });
+      }
+
+      const renderCards = (title, items, isOpenSource) => {
+        if (!items || !items.length) return;
+        const s = section(title);
+        const cards = el('div', 'cards');
+        items.forEach(item => {
+          const card = el('article', 'card');
+          const main = el('div', '');
+          const heading = el('div', '');
+          heading.append(el('span', 'card-title', isOpenSource ? item.project : item.name));
+          if (item.role) heading.append(el('span', 'card-role', `｜${item.role}`));
+          main.append(heading);
+          if (item.scope) main.append(el('div', 'card-scope', item.scope));
+          if ((item.bullets || []).length) main.append(bulletList(item.bullets));
+          card.append(main);
+          if (item.url) card.append(link('证据 / 项目链接', item.url, 'company-link'));
+          cards.append(card);
+        });
+        s.append(cards);
+      };
+      renderCards('开源贡献', data.open_source, true);
+      renderCards('技术项目与沉淀', data.projects, false);
+
+      if ((data.awards || []).length || (data.skills || []).length) {
+        const s = section('奖项与技能');
+        const grid = el('div', 'compact-grid');
+        if ((data.awards || []).length) {
+          const col = el('div', 'compact-item');
+          data.awards.forEach(item => {
+            const row = el('div', 'award-line');
+            row.append(el('span', '', item.name), el('span', 'dates', item.date || ''));
+            col.append(row);
+          });
+          grid.append(col);
+        }
+        if ((data.skills || []).length) {
+          const list = el('div', 'skill-list compact-item');
+          data.skills.forEach(item => list.append(el('span', 'skill', item)));
+          grid.append(list);
+        }
+        s.append(grid);
+      }
+
+    })();
+  </script>
+</body>
+</html>

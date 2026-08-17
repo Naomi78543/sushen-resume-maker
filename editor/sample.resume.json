@@ -1,0 +1,142 @@
+{
+  "mode": "source_grounded",
+  "source_title": "在线编辑器公开演示数据（非真实候选人）",
+  "profile": {
+    "name": "示例同学",
+    "headline": "跨境电商运营｜直播经营分析 · Partner Operations · Conversion Optimization",
+    "location": "上海",
+    "contacts": [
+      {"label": "邮箱", "value": "demo@example.com", "url": "mailto:demo@example.com"},
+      {"label": "到岗", "value": "每周5天 · 连续6个月"}
+    ]
+  },
+  "education": [
+    {
+      "institution": "示例大学",
+      "program": "传播学",
+      "degree": "硕士",
+      "dates": "2025.09 - 2027.06",
+      "bullets": [
+        {
+          "text": "公开演示条目；正式使用时请替换为真实、可核验的教育信息。",
+          "verification": "source_grounded",
+          "source_note": "公开演示数据",
+          "claim_ids": ["DEMO-C-001"]
+        }
+      ]
+    }
+  ],
+  "experience": [
+    {
+      "company": "示例跨境电商团队",
+      "team": "运营实习生｜直播与合作方运营",
+      "dates": "2026.01 - 2026.06",
+      "brand": "red",
+      "tags": ["Live Commerce", "Partner Operations", "Funnel Analytics"],
+      "projects": [
+        {
+          "name": "直播经营分析",
+          "subtitle": "策划、执行与漏斗复盘",
+          "background": [
+            {
+              "text": "围绕直播曝光、进房、停留、互动和留资链路建立复盘口径。",
+              "verification": "source_grounded",
+              "source_note": "公开演示数据",
+              "claim_ids": ["DEMO-C-002"]
+            }
+          ],
+          "impact": [
+            {
+              "text": "形成可复用的直播复盘表；演示数据不包含虚构业务指标。",
+              "verification": "source_grounded",
+              "source_note": "公开演示数据",
+              "claim_ids": ["DEMO-C-003"]
+            }
+          ],
+          "responsibilities": [
+            {
+              "text": "整理直播脚本与后台数据，按内容、时段和转化路径定位问题并提出下一轮测试假设。",
+              "verification": "source_grounded",
+              "source_note": "公开演示数据",
+              "claim_ids": ["DEMO-C-004"]
+            }
+          ],
+          "keywords": ["Live Funnel", "A/B Testing", "PCU / ACU", "Lead Conversion"]
+        },
+        {
+          "name": "合作方流程治理",
+          "subtitle": "需求分级与SOP沉淀",
+          "background": [
+            {
+              "text": "承接合作方入驻、资料补齐、商品审核和异常流转需求。",
+              "verification": "source_grounded",
+              "source_note": "公开演示数据",
+              "claim_ids": ["DEMO-C-005"]
+            }
+          ],
+          "impact": [
+            {
+              "text": "沉淀入驻与审核流程，明确节点、责任人和异常升级路径。",
+              "verification": "source_grounded",
+              "source_note": "公开演示数据",
+              "claim_ids": ["DEMO-C-006"]
+            }
+          ],
+          "responsibilities": [
+            {
+              "text": "维护需求台账，协调合作方与内部团队推进关键节点。",
+              "verification": "source_grounded",
+              "source_note": "公开演示数据",
+              "claim_ids": ["DEMO-C-007"]
+            }
+          ],
+          "keywords": ["Partner Operations", "Onboarding SOP", "Requirement Triage"]
+        }
+      ]
+    },
+    {
+      "company": "示例独立站项目",
+      "team": "Shopify运营与转化分析",
+      "dates": "2025.08 - 2025.12",
+      "brand": "blue",
+      "tags": ["Shopify", "Google Analytics", "Conversion Funnel"],
+      "projects": [
+        {
+          "name": "商品经营看板",
+          "subtitle": "从总盘指标下钻到页面问题",
+          "background": [
+            {
+              "text": "围绕访问、点击、加购和支付链路整理商品表现。",
+              "verification": "source_grounded",
+              "source_note": "公开演示数据",
+              "claim_ids": ["DEMO-C-008"]
+            }
+          ],
+          "impact": [
+            {
+              "text": "支持商品表现下钻和页面调整决策；正式版本需补充真实口径。",
+              "verification": "source_grounded",
+              "source_note": "公开演示数据",
+              "claim_ids": ["DEMO-C-009"]
+            }
+          ],
+          "responsibilities": [
+            {
+              "text": "维护PV、UV、CTR、加购率和支付转化率等指标，并记录页面版本变化。",
+              "verification": "source_grounded",
+              "source_note": "公开演示数据",
+              "claim_ids": ["DEMO-C-010"]
+            }
+          ],
+          "keywords": ["Shopify", "Google Analytics", "PV / UV / CTR", "Conversion Optimization"]
+        }
+      ]
+    }
+  ],
+  "open_source": [],
+  "projects": [],
+  "awards": [
+    {"name": "英语能力与其他证书请填写真实成绩", "date": ""}
+  ],
+  "skills": ["Excel数据透视", "Shopify", "Google Analytics", "直播经营分析", "SOP设计", "A/B Testing"]
+}

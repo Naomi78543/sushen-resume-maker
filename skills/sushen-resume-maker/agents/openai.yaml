@@ -1,0 +1,8 @@
+interface:
+  display_name: "酥神简历制作与面试防御"
+  short_description: "生成可在线编辑的证据型 ASU 简历，并预测压力面试问题"
+  brand_color: "#245579"
+  default_prompt: "使用 $sushen-resume-maker 深挖我的真实经历，建立 Claim Ledger 与 JD Matrix，用固定 ASU 前端生成简历和在线编辑源文件，并为每个强表述生成面试问题、压力追问和安全回答边界。"
+
+policy:
+  allow_implicit_invocation: true

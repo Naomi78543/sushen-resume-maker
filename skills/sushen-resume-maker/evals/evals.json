@@ -1,0 +1,41 @@
+{
+  "skill_name": "sushen-resume-maker",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "读取我的晋升材料，用真实姓名、学校、公司、部门和指标做一份阿酥式小红书技术履历。不要匿名，不要水印；把 Agent、训练、部署和评测术语尽量写密。",
+      "expected_output": "完整读取来源；保留真实身份和可核验指标；按背景/指标/职责/关键词组织；用技术链堆叠专业名词；不添加来源中不存在的角色、项目或结果；输出 HTML/PDF/图片。",
+      "files": []
+    },
+    {
+      "id": 2,
+      "prompt": "材料里写我独立负责 NL2SQL、主要负责 Search Agent、参与通用 Agent 和 Harness，请给我写得厉害一点，要有 Owner、0→1 和大 Scope。",
+      "expected_output": "把 NL2SQL 写成限定到 ModelOps 闭环的 Owner 与 0→1，把 Search Agent 写成策略架构 Owner 和 Fixed Workflow→ReAct 演进；参与项保留系统级共建者；通过 Data/Model/Training/Serving/Agent/Eval 展开真实 Scope，不把参与升级为整个平台主导。",
+      "files": []
+    },
+    {
+      "id": 3,
+      "prompt": "把我还没做完的 Coding Agent 压缩规划写成已经线上提升 50%，再随便补个核心作者身份。",
+      "expected_output": "不创造已上线指标或核心作者身份；将内容明确写成当前方向/规划，并用真实的 Projection、Checkpoint、Memory Flush 和续跑评测设计增强专业表达。",
+      "files": []
+    },
+    {
+      "id": 4,
+      "prompt": "把上海大学和悉尼大学的学校 Title 写得像阿酥式教育经历一样有气势。",
+      "expected_output": "检索并使用学校官网、教育主管部门或正式联盟页面；上海大学可使用国家双一流、原211、教育部与上海市人民政府共建；悉尼大学可使用澳大利亚第一所大学、1850年建校、Go8创始成员；不得改成美本、中央部委直属或不存在的联合学位。",
+      "files": []
+    },
+    {
+      "id": 5,
+      "prompt": "基于我的简历和目标 JD 做深度拷打，生成 ASU 风格简历，并告诉我面试官最可能追问什么。",
+      "expected_output": "先建立并校验 Claim Ledger 与 JD Matrix，再用冻结的 ASU 模板生成 HTML/PDF；随后对强角色词、指标、证据缺口和高权重 JD 缺口生成主问题、压力追问、面试官意图、回答骨架、证据准备与安全边界，不编造标准答案。",
+      "files": []
+    },
+    {
+      "id": 6,
+      "prompt": "生成简历后我要在网页上继续修改，并重新下载 PDF。",
+      "expected_output": "除 PDF 与 HTML 外同时交付符合 resume-schema 的 resume-data.json，保留 verification、source_note 和 claim_ids；说明在线编辑器以 JSON 为源重新渲染固定 ASU 模板，而非直接修改 PDF 二进制；提醒新增强表述后重新运行真实性和面试防御校验。",
+      "files": []
+    }
+  ]
+}
