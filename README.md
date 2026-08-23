@@ -99,6 +99,11 @@ $CODEX_HOME/skills/sushen-resume-maker
 - 校验公司、学校、岗位、项目、时间和数字，发现新增事实时阻止进入最终简历；
 - 查看完整 Before / After 和 ASU 模板预览；
 - 一键把结构化结果写入现有编辑器继续调整。
+- 将实习经历固定重组为“背景与目标 / 我的职责 / 数据与指标”三个 A4 区块，缺失指标只在编辑器内提示；
+- 自动识别原文中的数字、GMV、CTR、CVR、SQL、AI Agent、SOP 等重点词，并允许在编辑器中手动增删；
+- 保留原简历或用户补充的作品集、项目演示、文章和 GitHub 链接，不自动生成链接；
+- 尝试提取 PDF / DOCX 图片作为照片候选，由用户确认、裁剪或删除后才显示在姓名区；
+- 仅在有奖项、推荐信、客户反馈或用户确认等证据时展示“专业评价 / 外部认可”，否则仅展示同源的“候选人定位”。
 
 在线拷打采用本地规则引擎，不冒充 AI 生成器：它负责材料读取、OCR、能力线索识别、自适应提问、亮点沉淀和安全初筛；最终定向改写、ASU 排版与 PDF 由完整 Skill 基于校验通过的 JSON 完成。候选人文件不会被提交到 GitHub 仓库或上传至项目服务器。PDF.js、Tesseract.js 及中英文 OCR 模型通过公共 CDN 加载，识别在当前浏览器中运行；首次 OCR 需要联网下载模型。
 
@@ -233,3 +238,4 @@ python skills/sushen-resume-maker/scripts/validate_interview_defense.py \
 ## 许可证说明
 
 本项目以 [MIT License](LICENSE) 发布。生成与审计设计参考了 [Claycui828/ASu-resume-skills](https://github.com/Claycui828/ASu-resume-skills)，前端结构与模板约定参考了 [Hisn00w/ASu-skills](https://github.com/Hisn00w/ASu-skills)；两者均使用 MIT License，原始版权声明见 [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md)。
+

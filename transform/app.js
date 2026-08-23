@@ -16,7 +16,7 @@
     ["education", /^(教育背景|教育经历|教育)$/i],
     ["experience", /^(实习经历|工作经历|工作经验|职业经历|实践经历|新媒体经历|新媒体经验|自媒体经历|自媒体经验|内容创作经历)$/i],
     ["projects", /^(项目经历|项目经验|科研经历|课题经历|创业经历)$/i],
-    ["skills", /^(专业技能|技能证书|技能及证书|技能|语言及技能|能力与技能)$/i],
+    ["skills", /^(专业技能|技能证书|技能及证书|技能奖项|技能|语言及技能|能力与技能)$/i],
     ["awards", /^(荣誉奖项|奖项荣誉|获奖经历|奖项|荣誉)$/i]
   ];
   const ROLE_PATTERN = /(产品(?:经理|运营|实习生)?|策略运营|内容运营|用户运营|商业运营|电商运营|独立站运营|跨境(?:电商|运营)|数据分析(?:师)?|市场(?:营销|运营)?|新媒体运营|工程师|设计师|研究员|顾问|编辑|记者|实习生|Intern|Manager|Engineer|Analyst|Designer|Researcher)/i;
@@ -46,6 +46,8 @@
   let extractionMethod = "";
   let sourceConfirmed = false;
   let importBusy = false;
+  let photoCandidates = [];
+  let selectedPhoto = null;
   let toastTimer = 0;
 
   function clone(value) {
@@ -65,8 +67,14 @@
       raw_text: text,
       verification: verification || "source_grounded",
       source_note: fileName,
-      claim_ids: ["SOURCE-" + String(index).padStart(3, "0")]
+      claim_ids: ["SOURCE-" + String(index).padStart(3, "0")],
+      highlights: detectHighlights(text)
     };
+  }
+
+  function detectHighlights(text) {
+    const values = String(text || "").match(/\d+(?:\.\d+)?(?:%|\+|万\+?|亿|次|家|人|个|天|月|年|小时|分钟|项|条|份|元|万元|美元|单|场)?|GMV|CTR|CVR|SQL|AI Agent|SOP|A\/B Test(?:ing)?|Python|Excel|Prompt Engineering/gi) || [];
+    return [...new Set(values.map(item => item.trim()).filter(Boolean))];
   }
 
   function showToast(message, error) {
@@ -242,6 +250,87 @@
     return canvas;
   }
 
+  function candidateFromDataUrl(src, source) {
+    return new Promise(resolve => {
+      if (!/^data:image\/(?:png|jpeg|webp);base64,/i.test(String(src || ""))) return resolve(null);
+      const image = new Image();
+      image.onerror = () => resolve(null);
+      image.onload = () => {
+        if (image.naturalWidth < 70 || image.naturalHeight < 70) return resolve(null);
+        const ratio = image.naturalWidth / image.naturalHeight;
+        if (ratio < 0.5 || ratio > 1.6) return resolve(null);
+        resolve({ src, source, width: image.naturalWidth, height: image.naturalHeight });
+      };
+      image.src = src;
+    });
+  }
+
+  function pdfImageToDataUrl(image) {
+    try {
+      const width = Number(image && image.width) || 0;
+      const height = Number(image && image.height) || 0;
+      if (width < 70 || height < 70 || width > 1800 || height > 1800) return null;
+      const canvas = document.createElement("canvas");
+      canvas.width = width; canvas.height = height;
+      const context = canvas.getContext("2d");
+      if (image instanceof HTMLImageElement || image instanceof HTMLCanvasElement || (typeof ImageBitmap !== "undefined" && image instanceof ImageBitmap)) {
+        context.drawImage(image, 0, 0, width, height);
+      } else if (image.data) {
+        const source = image.data;
+        const rgba = new Uint8ClampedArray(width * height * 4);
+        if (source.length === rgba.length) rgba.set(source);
+        else if (source.length === width * height * 3) {
+          for (let input = 0, output = 0; input < source.length; input += 3, output += 4) {
+            rgba[output] = source[input]; rgba[output + 1] = source[input + 1]; rgba[output + 2] = source[input + 2]; rgba[output + 3] = 255;
+          }
+        } else return null;
+        context.putImageData(new ImageData(rgba, width, height), 0, 0);
+      } else return null;
+      return canvas.toDataURL("image/jpeg", 0.88);
+    } catch (_) { return null; }
+  }
+
+  async function extractPdfPhotoCandidates(page, pdfjs) {
+    try {
+      const operators = await page.getOperatorList();
+      const names = operators.fnArray.map((fn, index) => fn === pdfjs.OPS.paintImageXObject ? operators.argsArray[index] && operators.argsArray[index][0] : null).filter(Boolean);
+      const candidates = [];
+      for (const name of [...new Set(names)].slice(0, 12)) {
+        const image = await new Promise(resolve => {
+          let settled = false;
+          const timer = setTimeout(() => { if (!settled) { settled = true; resolve(null); } }, 1200);
+          try {
+            page.objs.get(name, value => {
+              if (!settled) { settled = true; clearTimeout(timer); resolve(value); }
+            });
+          } catch (_) { clearTimeout(timer); resolve(null); }
+        });
+        const src = pdfImageToDataUrl(image);
+        const candidate = src ? await candidateFromDataUrl(src, "PDF 内嵌图片") : null;
+        if (candidate) candidates.push(candidate);
+        if (candidates.length >= 5) break;
+      }
+      return candidates;
+    } catch (_) { return []; }
+  }
+
+  async function extractDocxPhotoCandidates(file, mammoth) {
+    try {
+      const htmlResult = await mammoth.convertToHtml(
+        { arrayBuffer: await file.arrayBuffer() },
+        { convertImage: mammoth.images.imgElement(async image => ({ src: `data:${image.contentType};base64,${await image.read("base64")}` })) }
+      );
+      const documentNode = new DOMParser().parseFromString(htmlResult.value || "", "text/html");
+      const candidates = [];
+      for (const image of [...documentNode.querySelectorAll("img")].slice(0, 12)) {
+        const candidate = await candidateFromDataUrl(image.src, "DOCX 内嵌图片");
+        if (candidate) candidates.push(candidate);
+        if (candidates.length >= 5) break;
+      }
+      return candidates;
+    } catch (_) { return []; }
+  }
+
   async function extractPdfText(file) {
     const pdfjs = await ensurePdfJs();
     const bytes = new Uint8Array(await file.arrayBuffer());
@@ -259,6 +348,7 @@
     for (let pageNo = 1; pageNo <= pdf.numPages; pageNo += 1) {
       updateImportProgress(`读取 PDF 第 ${pageNo}/${pdf.numPages} 页`);
       const page = await pdf.getPage(pageNo);
+      if (pageNo === 1) photoCandidates = await extractPdfPhotoCandidates(page, pdfjs);
       const content = await page.getTextContent();
       const direct = pdfItemsToLines(content.items).join("\n");
       const directReport = analyzeTextQuality(direct);
@@ -283,7 +373,8 @@
       text,
       method: ocrPages ? `PDF 原生文字 + OCR（${ocrPages}/${pdf.numPages} 页）` : `PDF 原生文字（${pdf.numPages} 页）`,
       quality: analyzeTextQuality(text),
-      pages: pageReports
+      pages: pageReports,
+      photoCandidates
     };
   }
 
@@ -291,7 +382,8 @@
     const mammoth = await ensureMammoth();
     const result = await mammoth.extractRawText({ arrayBuffer: await file.arrayBuffer() });
     const text = cleanLine(result.value).length ? result.value : "";
-    return { text, method: "DOCX 原生文字", quality: analyzeTextQuality(text), pages: [] };
+    photoCandidates = await extractDocxPhotoCandidates(file, mammoth);
+    return { text, method: "DOCX 原生文字", quality: analyzeTextQuality(text), pages: [], photoCandidates };
   }
 
   async function extractFileText(file) {
@@ -446,6 +538,7 @@
           dates: header.dates,
           brand: normalized === "ByteDance" ? "red" : "blue",
           tags: [],
+          links: [],
           projects: [{
             name: header.role || header.company,
             subtitle: "",
@@ -460,6 +553,13 @@
       } else if (current) {
         const text = stripBullet(line);
         if (!text) return;
+        const urls = text.match(/https?:\/\/[^\s|｜]+/gi) || [];
+        urls.forEach(url => {
+          if (!current.links.some(item => item.url === url)) {
+            const label = /github\.com/i.test(url) ? "GitHub" : /作品|portfolio/i.test(text) ? "作品集" : /文章|article/i.test(text) ? "文章" : "项目演示";
+            current.links.push({ label, url, verification: "source_grounded", source_note: fileName });
+          }
+        });
         counter.value += 1;
         current.projects[0].responsibilities.push(sourceFact(text, fileName, counter.value));
         toolMatches(text).forEach(tool => {
@@ -517,9 +617,14 @@
   }
 
   function parseAwards(lines) {
-    return lines.map(line => {
+    return lines.flatMap(line => {
       const text = stripBullet(line);
-      return { name: withoutDate(text), date: dateFromLine(text), raw_text: text };
+      const date = dateFromLine(text);
+      const content = text.replace(/^(?:奖项|荣誉)(?:奖项)?[：:]\s*/i, "");
+      const names = /^(?:奖项|荣誉)/i.test(text)
+        ? content.split(/[、；;]/).map(cleanLine).filter(Boolean)
+        : [withoutDate(text)];
+      return names.map(name => ({ name: withoutDate(name), date, raw_text: text }));
     }).filter(item => item.name);
   }
 
@@ -546,6 +651,11 @@
     if (lines.join("").length < 30) throw new Error("文件中未提取到足够文字；扫描版 PDF 目前不支持，且不会改用示例数据");
     const sections = splitSections(lines);
     const counter = { value: 0 };
+    const inlineAwards = sections.skills.filter(line => /^(?:奖项|荣誉)(?:奖项)?[：:]/i.test(cleanLine(line)));
+    const awards = parseAwards([...sections.awards, ...inlineAwards]);
+    const profile = contactProfile(sections.profile.length ? sections.profile : lines.slice(0, 8));
+    profile.photo = extraction && extraction.photo || { src: "", crop: { x: 50, y: 50, zoom: 1 }, confirmed: false };
+    profile.summary = null;
     const resume = {
       schema_version: "2.0",
       data_role: "sourceResume",
@@ -562,12 +672,20 @@
         user_confirmed: true
       },
       raw_text: text,
-      profile: contactProfile(sections.profile.length ? sections.profile : lines.slice(0, 8)),
+      profile,
       education: parseEducation(sections.education, file.name, counter),
       experience: parseExperiences(sections.experience, file.name, counter),
       open_source: [],
       projects: parseProjects(sections.projects, file.name, counter),
-      awards: parseAwards(sections.awards),
+      awards,
+      endorsements: awards.slice(0, 3).map((award, index) => ({
+        text: award.name,
+        source: `原始简历·荣誉奖项${award.date ? `（${award.date}）` : ""}`,
+        verification: "source_grounded",
+        source_note: file.name,
+        claim_ids: [`SOURCE-ENDORSEMENT-${String(index + 1).padStart(2, "0")}`],
+        highlights: detectHighlights(award.name)
+      })),
       skills: parseSkills(sections.skills, text)
     };
     addMissingMetricHints(resume);
@@ -581,6 +699,7 @@
     if (!data) return texts;
     add(data.profile && data.profile.name);
     add(data.profile && data.profile.headline);
+    add(data.profile && data.profile.summary && data.profile.summary.text);
     add(data.profile && data.profile.location);
     (data.profile && data.profile.contacts || []).forEach(contact => add(contact.value));
     (data.education || []).forEach(item => {
@@ -588,6 +707,7 @@
     });
     (data.experience || []).forEach(exp => {
       add(exp.company); add(exp.team); add(exp.dates);
+      (exp.links || []).forEach(item => { add(item.label); add(item.url); });
       (exp.tags || []).forEach(add);
       (exp.projects || []).forEach(project => {
         add(project.name); add(project.subtitle);
@@ -600,6 +720,7 @@
     });
     (data.skills || []).forEach(add);
     (data.awards || []).forEach(item => { add(item.name); add(item.date); });
+    (data.endorsements || []).forEach(item => { add(item.text); add(item.source); });
     return texts;
   }
 
@@ -646,7 +767,11 @@
         const commaParts = text.split(/[，,]+/).map(cleanLine).filter(part => part.length >= 6);
         if (commaParts.length > 1) parts = commaParts;
       }
-      parts.forEach(part => output.push(Object.assign({}, clone(source), { text: part, raw_text: source.raw_text || text })));
+      parts.forEach(part => output.push(Object.assign({}, clone(source), {
+        text: part,
+        raw_text: source.raw_text || text,
+        highlights: detectHighlights(part)
+      })));
     });
     return output;
   }
@@ -675,6 +800,18 @@
       coreCapabilities: positioning.capabilities,
       rule: "只重组 sourceResume 已有原文；不创建新的公司、学校、岗位、项目、时间、数字或业务指标"
     };
+    if (!(optimized.endorsements || []).length) {
+      const role = (source.experience || []).map(item => item.team).find(Boolean) || source.profile.headline;
+      const capabilities = (source.skills || []).slice(0, 3);
+      const summaryText = [role ? `${role}方向候选人` : "", capabilities.length ? `具备${capabilities.join("、")}等已确认能力` : ""].filter(Boolean).join("，");
+      optimized.profile.summary = summaryText ? {
+        text: summaryText + "。",
+        verification: "source_grounded",
+        source_note: "由已确认的岗位与技能字段自动组合",
+        claim_ids: [],
+        highlights: detectHighlights(summaryText)
+      } : null;
+    }
     optimized.experience = (source.experience || []).map(exp => {
       const copied = clone(exp);
       copied.projects = (exp.projects || []).map(project => {
@@ -787,11 +924,80 @@
     $("qualityReasons").textContent = report.reasons.length ? report.reasons.join("；") : "未发现明显乱码或异常字符。";
   }
 
+  function renderSelectedPhoto() {
+    const preview = $("selectedPhotoPreview");
+    preview.replaceChildren();
+    if (!selectedPhoto || !selectedPhoto.src) preview.append(Object.assign(document.createElement("span"), { textContent: "未选择照片" }));
+    else {
+      const image = document.createElement("img");
+      image.src = selectedPhoto.src;
+      image.alt = "已选择照片预览";
+      const crop = selectedPhoto.crop || { x: 50, y: 50, zoom: 1 };
+      image.style.objectPosition = `${crop.x}% ${crop.y}%`;
+      image.style.transform = `scale(${crop.zoom})`;
+      preview.append(image);
+    }
+    $("removePhotoButton").disabled = !selectedPhoto;
+    $("photoCropControls").classList.toggle("hidden", !selectedPhoto);
+  }
+
+  function choosePhoto(candidate, index) {
+    selectedPhoto = candidate ? {
+      src: candidate.src,
+      source: candidate.source,
+      crop: { x: 50, y: 50, zoom: 1 },
+      confirmed: true
+    } : null;
+    $("photoCropX").value = "50"; $("photoCropY").value = "50"; $("photoZoom").value = "1";
+    [...$("photoCandidateList").querySelectorAll(".photo-candidate")].forEach((button, buttonIndex) => button.classList.toggle("selected", buttonIndex === index));
+    renderSelectedPhoto();
+  }
+
+  function renderPhotoCandidates() {
+    const list = $("photoCandidateList");
+    list.replaceChildren();
+    if (!photoCandidates.length) list.append(Object.assign(document.createElement("span"), { textContent: "未从文件中找到适合的照片候选，可单独上传或继续使用无照片版。" }));
+    else photoCandidates.forEach((candidate, index) => {
+      const button = document.createElement("button");
+      button.type = "button"; button.className = "photo-candidate";
+      const image = document.createElement("img");
+      image.src = candidate.src; image.alt = `图片候选 ${index + 1}`;
+      const label = document.createElement("span"); label.textContent = `候选 ${index + 1}`;
+      button.append(image, label);
+      button.addEventListener("click", () => choosePhoto(candidate, index));
+      list.append(button);
+    });
+    renderSelectedPhoto();
+  }
+
+  function imageFileToDataUrl(file, maxSide = 700) {
+    return new Promise((resolve, reject) => {
+      if (!file || !/^image\/(?:png|jpeg|webp)$/i.test(file.type)) return reject(new Error("请选择 PNG、JPG 或 WebP 图片"));
+      const reader = new FileReader();
+      reader.onerror = () => reject(new Error("照片读取失败"));
+      reader.onload = () => {
+        const image = new Image();
+        image.onerror = () => reject(new Error("照片格式无法识别"));
+        image.onload = () => {
+          const scale = Math.min(1, maxSide / Math.max(image.naturalWidth, image.naturalHeight));
+          const canvas = document.createElement("canvas");
+          canvas.width = Math.max(1, Math.round(image.naturalWidth * scale));
+          canvas.height = Math.max(1, Math.round(image.naturalHeight * scale));
+          canvas.getContext("2d").drawImage(image, 0, 0, canvas.width, canvas.height);
+          resolve(canvas.toDataURL("image/jpeg", 0.9));
+        };
+        image.src = String(reader.result || "");
+      };
+      reader.readAsDataURL(file);
+    });
+  }
+
   function showSourceReview(text, report, method) {
     $("sourceText").value = text;
     $("confirmSource").checked = false;
     $("confirmSourceButton").disabled = true;
     renderQualityReport(report, method);
+    renderPhotoCandidates();
     $("reviewSection").classList.remove("hidden");
     $("recognitionSection").classList.add("hidden");
     $("reviewSection").scrollIntoView({ behavior: "smooth", block: "start" });
@@ -812,7 +1018,8 @@
     try {
       sourceResume = deepFreeze(buildSourceResume(reviewedText, selectedFile, {
         method: extractionMethod,
-        quality: report
+        quality: report,
+        photo: selectedPhoto || { src: "", crop: { x: 50, y: 50, zoom: 1 }, confirmed: false }
       }));
       localStorage.setItem(SOURCE_STORAGE_KEY, JSON.stringify(sourceResume));
       extractedText = reviewedText;
@@ -835,6 +1042,8 @@
     extractionReport = null;
     extractionMethod = "";
     sourceConfirmed = false;
+    photoCandidates = [];
+    selectedPhoto = null;
     localStorage.removeItem(SOURCE_STORAGE_KEY);
     $("reviewSection").classList.add("hidden");
     $("recognitionSection").classList.add("hidden");
@@ -875,6 +1084,7 @@
       extractedText = result.text;
       extractionReport = result.quality || analyzeTextQuality(result.text);
       extractionMethod = result.method || "文件文字提取";
+      photoCandidates = result.photoCandidates || [];
       $("fileMeta").textContent = `${formatSize(file.size)} · ${extractionMethod} · ${extractionReport.lineCount} 行`;
       $("fileStatus").textContent = extractionReport.passed ? "等待原文确认" : "需要人工校对";
       showSourceReview(extractedText, extractionReport, extractionMethod);
@@ -996,9 +1206,26 @@
       $("confirmSourceButton").disabled = !$("confirmSource").checked;
     });
     $("confirmSourceButton").addEventListener("click", confirmReviewedSource);
+    $("uploadPhotoButton").addEventListener("click", () => $("photoInput").click());
+    $("photoInput").addEventListener("change", async () => {
+      try {
+        const src = await imageFileToDataUrl($("photoInput").files[0]);
+        choosePhoto({ src, source: "用户单独上传" }, -1);
+        showToast("照片已选择并标记为用户确认");
+      } catch (error) { showToast(error.message, true); }
+    });
+    $("removePhotoButton").addEventListener("click", () => choosePhoto(null, -1));
+    [["photoCropX", "x"], ["photoCropY", "y"], ["photoZoom", "zoom"]].forEach(([id, key]) => {
+      $(id).addEventListener("input", () => {
+        if (!selectedPhoto) return;
+        selectedPhoto.crop[key] = Number($(id).value);
+        renderSelectedPhoto();
+      });
+    });
     $("startButton").addEventListener("click", startTransform);
     $("editorButton").addEventListener("click", enterEditor);
   }
 
   init();
 })();
+

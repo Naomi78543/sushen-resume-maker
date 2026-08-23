@@ -70,7 +70,9 @@ python scripts/validate_jd_matrix.py path/to/jd-matrix.json --ledger path/to/cla
 完整读取 [references/resume-schema.md](references/resume-schema.md) 和 [references/style-guide.md](references/style-guide.md)，生成 `resume-data.json`。
 
 - 每个可见 bullet 必须有 `verification`、`source_note`，并增加 `claim_ids` 以便反推面试问题。
-- 重点项目使用模板原有的“背景 / 指标与效果 / 我的职责 / 技术关键词”。
+- A4 实习经历固定只显示“背景与目标 / 我的职责 / 数据与指标”三个区块：`background` 映射背景与目标，`responsibilities + actions` 合并为我的职责，`impact` 映射数据与指标；`missingMetrics` 仅在编辑器提示，不进入正式简历。
+- 可见内容的 `highlights[]` 只标记原文中真实存在的数字、方法、成果和交付物；作品链接只能来自原材料或用户补充。
+- 照片必须由用户从提取候选中确认或单独上传；外部认可必须写明证据来源。没有外部证据时，只能展示明确标为候选人定位的同源总结，不得伪装成他人评价。
 - 运营岗位的“技术关键词”应写真实平台、指标体系、分析方法、协作机制与 SOP，不得为了密度虚构算法或工程术语。
 - `Owner`、`0→1` 与强因果表述必须满足角色与证据规则；不满足时使用“负责限定模块、参与、协同、形成交付物”等准确措辞。
 
@@ -180,3 +182,4 @@ python scripts/validate_interview_defense.py path/to/interview-defense.json \
 - `scripts/validate_claim_ledger.py`：事实层校验器。
 - `scripts/validate_jd_matrix.py`：岗位匹配层校验器。
 - `scripts/validate_interview_defense.py`：面试防御层校验器。
+

@@ -27,12 +27,26 @@ REQUIRED_TEXT = {
         "校对原始简历文字",
         "解析原文（可直接修正错字、断行和乱码）",
         "确认原文并识别结构",
+        "照片候选与裁剪",
+    ),
+    "editor/app.js": (
+        "自动识别重点词",
+        "公司旁作品链接",
+        "候选人照片",
     ),
     "skills/sushen-resume-maker/assets/resume_template.html": (
         "实习 / 工作经历",
-        "背景：",
+        "背景与目标",
+        "我的职责",
+        "数据与指标",
+        "专业评价 / 外部认可",
+    ),
+}
+
+FORBIDDEN_TEXT = {
+    "skills/sushen-resume-maker/assets/resume_template.html": (
+        "关键动作 / 方法：",
         "指标与效果：",
-        "我的职责：",
     ),
 }
 
@@ -89,6 +103,19 @@ def main() -> int:
                 fail(f"{relative} lost critical Chinese text {sentinel!r}")
                 errors += 1
 
+    for relative, sentinels in FORBIDDEN_TEXT.items():
+        path = root / relative
+        try:
+            text = path.read_text(encoding="utf-8")
+        except OSError as exc:
+            fail(f"cannot read required file {relative}: {exc}")
+            errors += 1
+            continue
+        for sentinel in sentinels:
+            if sentinel in text:
+                fail(f"{relative} still contains retired A4 label {sentinel!r}")
+                errors += 1
+
     if errors:
         print(f"UTF-8 validation failed: {errors} error(s), {checked} file(s) checked")
         return 1
@@ -98,3 +125,4 @@ def main() -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
+

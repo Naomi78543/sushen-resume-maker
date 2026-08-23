@@ -56,8 +56,25 @@
     next.source_title ||= "在线编辑器导入数据";
     next.profile ||= {};
     next.profile.contacts ||= [];
+    next.profile.photo ||= { src: "", crop: { x: 50, y: 50, zoom: 1 }, confirmed: false };
+    next.profile.photo.crop ||= { x: 50, y: 50, zoom: 1 };
+    next.endorsements ||= [];
     next.education ||= [];
     next.experience ||= [];
+    next.experience.forEach(exp => {
+      exp.links ||= exp.link ? [exp.link] : [];
+      delete exp.link;
+      (exp.projects || []).forEach(project => {
+        ["background", "impact", "responsibilities", "actions"].forEach(key => {
+          project[key] ||= [];
+          project[key] = project[key].map(item => {
+            if (typeof item === "string") return item;
+            item.highlights ||= [];
+            return item;
+          });
+        });
+      });
+    });
     next.open_source ||= [];
     next.projects ||= [];
     next.awards ||= [];
@@ -68,7 +85,7 @@
   function validateImportedData(value) {
     if (!value || typeof value !== "object" || Array.isArray(value)) throw new Error("JSON 顶层必须是对象");
     if (!value.profile || typeof value.profile !== "object") throw new Error("缺少 profile 对象");
-    for (const key of ["education", "experience", "projects", "skills"]) {
+    for (const key of ["education", "experience", "projects", "skills", "endorsements"]) {
       if (value[key] !== undefined && !Array.isArray(value[key])) throw new Error(`${key} 必须是数组`);
     }
   }
@@ -217,8 +234,14 @@
       text,
       verification: "user_attested",
       source_note: "在线编辑器补充，需回写 Claim Ledger",
-      claim_ids: []
+      claim_ids: [],
+      highlights: detectHighlights(text)
     };
+  }
+
+  function detectHighlights(text) {
+    const values = String(text || "").match(/\d+(?:\.\d+)?(?:%|\+|万\+?|亿|次|家|人|个|天|月|年|小时|分钟|项|条|份|元|万元|美元|单|场)?|GMV|CTR|CVR|SQL|AI Agent|SOP|A\/B Test(?:ing)?|Python|Excel|Prompt Engineering/gi) || [];
+    return [...new Set(values.map(item => item.trim()).filter(Boolean))];
   }
 
   function bulletEditor(title, items) {
@@ -232,14 +255,33 @@
     items.forEach((item, index) => {
       const value = typeof item === "string" ? item : item.text || "";
       const row = element("div", { className: "bullet-row" });
+      const content = element("div", { className: "bullet-content" });
       const textarea = element("textarea");
       textarea.value = value;
       textarea.placeholder = "写清动作、对象、方法和真实结果";
       textarea.addEventListener("input", () => {
-        if (typeof items[index] === "string") items[index] = textarea.value;
+        if (typeof items[index] === "string") items[index] = bulletObject(textarea.value);
         else items[index].text = textarea.value;
         scalarChanged();
       });
+      const highlightInput = element("input");
+      highlightInput.type = "text";
+      highlightInput.placeholder = "重点词：数字、GMV、CTR、SQL、AI Agent、SOP（逗号分隔）";
+      highlightInput.value = typeof item === "string" ? detectHighlights(item).join(", ") : (item.highlights || []).join(", ");
+      highlightInput.addEventListener("input", () => {
+        if (typeof items[index] === "string") items[index] = bulletObject(textarea.value);
+        items[index].highlights = highlightInput.value.split(/[,，]/).map(value => value.trim()).filter(Boolean);
+        scalarChanged();
+      });
+      const autoButton = element("button", { className: "mini-button", text: "自动识别重点词", type: "button" });
+      autoButton.addEventListener("click", () => {
+        const detected = detectHighlights(textarea.value);
+        if (typeof items[index] === "string") items[index] = bulletObject(textarea.value);
+        items[index].highlights = detected;
+        highlightInput.value = detected.join(", ");
+        scalarChanged();
+      });
+      content.append(textarea, highlightInput, autoButton);
       const controls = element("div", { className: "row-actions" });
       const up = element("button", { className: "mini-button", text: "↑", type: "button", ariaLabel: "上移要点" });
       const down = element("button", { className: "mini-button", text: "↓", type: "button", ariaLabel: "下移要点" });
@@ -250,10 +292,107 @@
       down.addEventListener("click", () => structuralChange(() => { [items[index + 1], items[index]] = [items[index], items[index + 1]]; }));
       remove.addEventListener("click", () => structuralChange(() => items.splice(index, 1)));
       controls.append(up, down, remove);
-      row.append(textarea, controls);
+      row.append(content, controls);
       wrap.append(row);
     });
     return wrap;
+  }
+
+  function imageFileToDataUrl(file, maxSide = 700) {
+    return new Promise((resolve, reject) => {
+      if (!file || !/^image\/(?:png|jpeg|webp)$/i.test(file.type)) return reject(new Error("请选择 PNG、JPG 或 WebP 图片"));
+      const reader = new FileReader();
+      reader.onerror = () => reject(new Error("照片读取失败"));
+      reader.onload = () => {
+        const image = new Image();
+        image.onerror = () => reject(new Error("照片格式无法识别"));
+        image.onload = () => {
+          const scale = Math.min(1, maxSide / Math.max(image.naturalWidth, image.naturalHeight));
+          const canvas = document.createElement("canvas");
+          canvas.width = Math.max(1, Math.round(image.naturalWidth * scale));
+          canvas.height = Math.max(1, Math.round(image.naturalHeight * scale));
+          canvas.getContext("2d").drawImage(image, 0, 0, canvas.width, canvas.height);
+          resolve(canvas.toDataURL("image/jpeg", 0.9));
+        };
+        image.src = String(reader.result || "");
+      };
+      reader.readAsDataURL(file);
+    });
+  }
+
+  function renderPhotoEditor(profile) {
+    const photo = profile.photo;
+    const block = element("section", { className: "section-card photo-editor tint-green" });
+    block.append(element("div", { className: "card-head" }, [element("h3", { text: "候选人照片" })]));
+    const preview = element("div", { className: "photo-preview" });
+    if (photo.src && photo.confirmed) {
+      const image = element("img");
+      image.src = photo.src;
+      image.alt = "候选人照片预览";
+      image.style.objectPosition = `${Number(photo.crop.x || 50)}% ${Number(photo.crop.y || 50)}%`;
+      image.style.transform = `scale(${Number(photo.crop.zoom || 1)})`;
+      preview.append(image);
+    } else preview.append(element("span", { text: "未使用照片" }));
+    const input = element("input");
+    input.type = "file";
+    input.accept = "image/png,image/jpeg,image/webp";
+    input.hidden = true;
+    input.addEventListener("change", async () => {
+      try {
+        photo.src = await imageFileToDataUrl(input.files[0]);
+        photo.confirmed = true;
+        photo.crop = { x: 50, y: 50, zoom: 1 };
+        pushHistory(); saveLocal(); renderEditor(); renderPreview();
+      } catch (error) { showToast(error.message, true); }
+    });
+    const actions = element("div", { className: "json-actions" });
+    const upload = element("button", { className: "button", text: photo.src ? "更换照片" : "上传照片", type: "button" });
+    upload.addEventListener("click", () => input.click());
+    const remove = element("button", { className: "button", text: "删除照片", type: "button" });
+    remove.disabled = !photo.src;
+    remove.addEventListener("click", () => structuralChange(() => { profile.photo = { src: "", crop: { x: 50, y: 50, zoom: 1 }, confirmed: false }; }));
+    actions.append(upload, remove);
+    block.append(preview, input, actions);
+    if (photo.src) {
+      const cropGrid = element("div", { className: "crop-grid" });
+      [["水平位置", "x", 0, 100, 1], ["垂直位置", "y", 0, 100, 1], ["缩放", "zoom", 1, 2, 0.05]].forEach(([label, key, min, max, step]) => {
+        const wrapper = element("label", { className: "field" });
+        wrapper.append(element("span", { text: label }));
+        const range = element("input");
+        range.type = "range"; range.min = min; range.max = max; range.step = step; range.value = photo.crop[key] ?? (key === "zoom" ? 1 : 50);
+        range.addEventListener("input", () => {
+          photo.crop[key] = Number(range.value);
+          const image = preview.querySelector("img");
+          if (image) {
+            image.style.objectPosition = `${Number(photo.crop.x || 50)}% ${Number(photo.crop.y || 50)}%`;
+            image.style.transform = `scale(${Number(photo.crop.zoom || 1)})`;
+          }
+          scalarChanged();
+        });
+        wrapper.append(range); cropGrid.append(wrapper);
+      });
+      block.append(cropGrid);
+    }
+    return block;
+  }
+
+  function renderEndorsementEditor() {
+    const title = element("div", { className: "subsection-title" });
+    title.append(element("span", { text: "专业评价 / 外部认可（最多展示 3 条）" }));
+    editorPanel.append(title);
+    data.endorsements.forEach((item, index) => {
+      const block = card(item.text || `外部认可 ${index + 1}`, data.endorsements, index, "green");
+      block.append(
+        field("认可内容", item.text, value => { item.text = value; }, { multiline: true }),
+        field("证据来源", item.source, value => { item.source = value; }, { placeholder: "奖项、导师评价、客户反馈或正式证明" }),
+        field("验证状态", item.verification || "user_attested", value => { item.verification = value; }, { type: "select", choices: [
+          { value: "source_grounded", label: "原始材料明确支持" },
+          { value: "user_attested", label: "用户本人确认" }
+        ] })
+      );
+      editorPanel.append(block);
+    });
+    editorPanel.append(addButton("外部认可", () => data.endorsements.push({ text: "", source: "", verification: "user_attested", source_note: "在线编辑器补充", claim_ids: [], highlights: [] })));
   }
 
   function renderProfile() {
@@ -263,9 +402,12 @@
     main.append(
       field("姓名", profile.name, value => { profile.name = value; }),
       field("求职定位 / Headline", profile.headline, value => { profile.headline = value; }, { multiline: true }),
+      field("自动人设 / 候选人定位", profile.summary && profile.summary.text || "", value => {
+        profile.summary = value ? { text: value, verification: "user_attested", source_note: "基于已确认经历与技能生成，用户确认", claim_ids: [], highlights: detectHighlights(value) } : null;
+      }, { multiline: true, placeholder: "只总结原始经历中已经存在的岗位、能力和方向，不冒充第三方评价。" }),
       field("所在地", profile.location, value => { profile.location = value; })
     );
-    editorPanel.append(main);
+    editorPanel.append(main, renderPhotoEditor(profile));
 
     profile.contacts.forEach((contact, index) => {
       const item = card(contact.label || `联系方式 ${index + 1}`, profile.contacts, index);
@@ -279,6 +421,7 @@
       editorPanel.append(item);
     });
     editorPanel.append(addButton("联系方式", () => profile.contacts.push({ label: "链接", value: "", url: "" })));
+    renderEndorsementEditor();
   }
 
   function renderEducation() {
@@ -306,6 +449,7 @@
     project.responsibilities ||= [];
     project.actions ||= [];
     project.keywords ||= [];
+    project.missingMetrics ||= [];
     const block = element("div", { className: "project-card" });
     const head = element("div", { className: "card-head" });
     head.append(element("h3", { text: project.name || `项目 ${projectIndex + 1}` }), actionButtons(projects, projectIndex, "项目"));
@@ -313,15 +457,38 @@
       head,
       field("项目名称", project.name, value => { project.name = value; }),
       field("副标题", project.subtitle, value => { project.subtitle = value; }),
-      bulletEditor("背景", project.background),
-      bulletEditor("指标与效果", project.impact),
+      bulletEditor("背景与目标", project.background),
       bulletEditor("我的职责", project.responsibilities),
-      bulletEditor("关键动作 / 方法", project.actions),
+      bulletEditor("关键动作 / 方法（A4 中合并到“我的职责”）", project.actions),
+      bulletEditor("数据与指标", project.impact),
+      field("待补数据提示（仅编辑器可见）", project.missingMetrics.join("\n"), value => {
+        project.missingMetrics = value.split(/\n/).map(item => item.trim()).filter(Boolean);
+      }, { multiline: true }),
       field("技术关键词（用逗号分隔）", project.keywords.join(", "), value => {
         project.keywords = value.split(/[,，]/).map(x => x.trim()).filter(Boolean);
       })
     );
     return block;
+  }
+
+  function experienceLinksEditor(exp) {
+    exp.links ||= [];
+    const wrap = element("div", { className: "subsection" });
+    const title = element("div", { className: "subsection-title" });
+    title.append(element("span", { text: "公司旁作品链接（只填写真实链接）" }));
+    const add = element("button", { className: "mini-button", text: "＋ 添加", type: "button" });
+    add.addEventListener("click", () => structuralChange(() => exp.links.push({ label: "作品集", url: "", verification: "user_attested" })));
+    title.append(add); wrap.append(title);
+    exp.links.forEach((item, index) => {
+      const row = element("div", { className: "link-editor-row" });
+      row.append(
+        field("标签", item.label, value => { item.label = value; }),
+        field("https:// 链接", item.url, value => { item.url = value; }, { placeholder: "https://" }),
+        actionButtons(exp.links, index, "作品链接")
+      );
+      wrap.append(row);
+    });
+    return wrap;
   }
 
   function renderExperience() {
@@ -345,13 +512,14 @@
         ),
         field("方向标签（逗号分隔）", exp.tags.join(", "), value => {
           exp.tags = value.split(/[,，]/).map(x => x.trim()).filter(Boolean);
-        })
+        }),
+        experienceLinksEditor(exp)
       );
       exp.projects.forEach((project, projectIndex) => block.append(projectEditor(project, exp.projects, projectIndex)));
-      block.append(addButton("项目", () => exp.projects.push({ name: "", subtitle: "", background: [], impact: [], responsibilities: [], actions: [], keywords: [] })));
+      block.append(addButton("项目", () => exp.projects.push({ name: "", subtitle: "", background: [], impact: [], responsibilities: [], actions: [], keywords: [], missingMetrics: [] })));
       editorPanel.append(block);
     });
-    editorPanel.append(addButton("实习 / 工作经历", () => data.experience.push({ company: "", team: "", dates: "", brand: "gray", tags: [], projects: [] })));
+    editorPanel.append(addButton("实习 / 工作经历", () => data.experience.push({ company: "", team: "", dates: "", brand: "gray", tags: [], links: [], projects: [] })));
   }
 
   function simpleProjectSection(title, items, openSource = false) {
@@ -652,3 +820,4 @@
 
   init();
 })();
+

@@ -50,12 +50,39 @@ def validate_data(data: dict, errors: list[str]) -> None:
     if not data.get("education") and not data.get("experience"):
         add(errors, "至少需要一段教育或经历")
 
+    photo = profile.get("photo") or {}
+    if photo.get("confirmed"):
+        src = str(photo.get("src", ""))
+        if not re.match(r"^data:image/(?:png|jpeg|webp);base64,", src, re.I):
+            add(errors, "确认照片只允许 PNG、JPEG 或 WebP data URL")
+        crop = photo.get("crop") or {}
+        try:
+            x, y, zoom = float(crop.get("x", 50)), float(crop.get("y", 50)), float(crop.get("zoom", 1))
+        except (TypeError, ValueError):
+            add(errors, "profile.photo.crop 必须是数字")
+        else:
+            if not (0 <= x <= 100 and 0 <= y <= 100 and 1 <= zoom <= 2):
+                add(errors, "profile.photo.crop 超出允许范围")
+
+    for index, item in enumerate(data.get("endorsements", [])):
+        if not item.get("source"):
+            add(errors, f"endorsements[{index}].source 缺失")
+        if item.get("verification") not in {"source_grounded", "user_attested"}:
+            add(errors, f"endorsements[{index}] 缺少有效证据状态")
+
     for index, exp in enumerate(data.get("experience", [])):
         for key in ("company", "team", "dates"):
             if not exp.get(key):
                 add(errors, f"experience[{index}].{key} 缺失")
         if exp.get("brand", "gray") not in ALLOWED_BRANDS:
             add(errors, f"experience[{index}].brand 非法：{exp.get('brand')}")
+        links = exp.get("links", [])
+        if not isinstance(links, list):
+            add(errors, f"experience[{index}].links 必须为数组")
+        else:
+            for link_index, item in enumerate(links):
+                if item.get("verification") not in {"source_grounded", "user_attested"}:
+                    add(errors, f"experience[{index}].links[{link_index}] 缺少有效证据状态")
 
     serialized = json.dumps(data, ensure_ascii=False)
     if re.search(r"(?<!\d)1[3-9]\d{9}(?!\d)", serialized):
@@ -73,6 +100,9 @@ def validate_data(data: dict, errors: list[str]) -> None:
                 add(errors, f"规划条目必须使用规划时态：{text[:45]}")
             if STRONG_TERMS.search(text) and verification == "planned":
                 add(errors, f"规划条目不能使用已完成的强角色词：{text[:45]}")
+            for highlight in obj.get("highlights", []):
+                if str(highlight).strip() and str(highlight).lower() not in text.lower():
+                    add(errors, f"重点词不在原文中：{highlight}｜{text[:35]}")
 
             metric = obj.get("metric")
             if isinstance(metric, dict):
@@ -165,3 +195,4 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
+

@@ -69,6 +69,29 @@
         <span>解析原文（可直接修正错字、断行和乱码）</span>
         <textarea id="sourceText" spellcheck="false" aria-describedby="qualityReasons"></textarea>
       </label>
+      <section class="photo-review" aria-labelledby="photoReviewTitle">
+        <div>
+          <span class="eyebrow">OPTIONAL PHOTO</span>
+          <h3 id="photoReviewTitle">照片候选与裁剪</h3>
+          <p>系统只提供从文件中提取的图片候选，不会自动认定为头像。请选择并确认，或单独上传照片；不选择则简历自动使用无照片版。</p>
+        </div>
+        <div class="photo-review-layout">
+          <div id="photoCandidateList" class="photo-candidates" aria-live="polite"></div>
+          <div>
+            <div id="selectedPhotoPreview" class="selected-photo-preview"><span>未选择照片</span></div>
+            <div class="photo-actions">
+              <button id="uploadPhotoButton" class="button" type="button">单独上传照片</button>
+              <button id="removePhotoButton" class="button" type="button" disabled>不使用照片</button>
+              <input id="photoInput" type="file" accept="image/png,image/jpeg,image/webp" hidden>
+            </div>
+          </div>
+        </div>
+        <div id="photoCropControls" class="photo-crop-controls hidden">
+          <label>水平位置<input id="photoCropX" type="range" min="0" max="100" value="50"></label>
+          <label>垂直位置<input id="photoCropY" type="range" min="0" max="100" value="50"></label>
+          <label>缩放<input id="photoZoom" type="range" min="1" max="2" step="0.05" value="1"></label>
+        </div>
+      </section>
       <label class="confirm-row">
         <input id="confirmSource" type="checkbox">
         <span>我已对照原文件确认公司、学校、岗位、项目、时间、数字和 bullet；以上文字可作为只读 sourceResume 的事实源。</span>
@@ -147,10 +170,11 @@
         <div class="change-head"><span class="eyebrow">SECTION-BY-SECTION</span><h3 id="changeLogTitle">逐段重构说明</h3></div>
         <div class="change-table" role="table" aria-label="逐段重构对比">
           <div class="change-row heading" role="row"><span>原始内容</span><span>重构方式</span><span>变化标签</span></div>
-          <div class="change-row" role="row"><span>原始事实</span><span>仅在背景、职责、动作和结果栏目之间重新归类，不改写原始实体与数字。</span><span><b>同源重组</b></span></div>
+          <div class="change-row" role="row"><span>原始事实</span><span>只重组为“背景与目标、我的职责、数据与指标”；关键动作合并进入职责，不改写原始实体与数字。</span><span><b>三段结构</b></span></div>
           <div class="change-row" role="row"><span>公司 / 学校 / 岗位 / 项目</span><span>全部继承 sourceResume，任何新增实体都会触发异常并阻止输出。</span><span><b>实体校验</b></span></div>
           <div class="change-row" role="row"><span>时间 / 数字 / 指标</span><span>只能复用原文；原文缺失时保留 missingMetrics 建议，不补造百分比。</span><span><b>数字校验</b></span></div>
           <div class="change-row" role="row"><span>原始简历与优化稿</span><span>sourceResume 只读保存，optimizedResume 单独进入现有编辑器。</span><span><b>双数据源</b></span></div>
+          <div class="change-row" role="row"><span>重点词 / 链接 / 照片</span><span>重点词用安全文本节点加粗；作品链接只继承原文或用户补充；照片必须由用户选择确认。</span><span><b>用户确认</b></span></div>
         </div>
       </section>
 
@@ -165,3 +189,4 @@
   <script src="app.js" defer></script>
 </body>
 </html>
+

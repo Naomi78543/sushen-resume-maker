@@ -61,6 +61,16 @@
       padding-bottom: 5mm;
       border-bottom: 2px solid var(--ink-blue);
     }
+    .masthead.has-photo { grid-template-columns: minmax(0,1fr) auto 26mm; align-items: center; }
+    .photo-frame {
+      width: 26mm;
+      height: 30mm;
+      overflow: hidden;
+      border: 1px solid var(--gray-300);
+      border-radius: 2px;
+      background: var(--gray-100);
+    }
+    .profile-photo { width: 100%; height: 100%; object-fit: cover; transform-origin: center; }
 
     .name {
       margin: 0;
@@ -93,6 +103,21 @@
 
     .contact-item { white-space: nowrap; }
     .contact-label { color: var(--gray-500); margin-right: 1mm; }
+
+    .professional-summary {
+      display: grid;
+      grid-template-columns: 27mm minmax(0,1fr);
+      gap: 2mm;
+      margin-top: 3.2mm;
+      padding: 2.2mm 3mm;
+      border-left: 3px solid var(--olive);
+      background: linear-gradient(90deg, var(--green-bar), rgba(234,241,229,.18));
+      break-inside: avoid;
+    }
+    .professional-summary-label { color: var(--ink-blue); font-weight: 850; }
+    .professional-summary-body { color: var(--gray-700); }
+    .professional-summary-body p { margin: 0 0 .8mm; }
+    .professional-summary-body p:last-child { margin-bottom: 0; }
 
     .section { margin-top: 5mm; }
     .section-title {
@@ -176,6 +201,7 @@
     .fact-list { margin: 0; padding-left: 4.2mm; }
     .fact-list li { margin: 0 0 .65mm; padding-left: .5mm; }
     .fact-list li::marker { color: var(--gray-500); }
+    .highlight { color: #101820; font-weight: 850; }
     .keywords { color: var(--gray-700); font-family: var(--mono); font-size: 8.9px; overflow-wrap: anywhere; }
 
     .cards { display: grid; grid-template-columns: 1fr; gap: 2.4mm; }
@@ -220,7 +246,8 @@
 
     @media (max-width: 760px) {
       .page { width: 100%; min-height: 0; margin: 0; padding: 20px 16px; }
-      .masthead { grid-template-columns: 1fr; align-items: start; }
+      .masthead, .masthead.has-photo { grid-template-columns: 1fr; align-items: start; }
+      .photo-frame { width: 24mm; height: 28mm; }
       .contact { justify-content: flex-start; text-align: left; max-width: none; }
       .compact-grid { grid-template-columns: 1fr; }
       .company-bar { grid-template-columns: 1fr; }
@@ -288,22 +315,63 @@
         if (!safe.startsWith('mailto:')) { a.target = '_blank'; a.rel = 'noopener noreferrer'; }
         return a;
       };
+      const allowedVerification = value => ['source_grounded', 'user_attested'].includes(value);
+      const autoHighlightTerms = text => {
+        const terms = String(text || '').match(/\d+(?:\.\d+)?(?:%|\+|万\+?|亿|次|家|人|个|天|月|年|小时|分钟|项|条|份|元|万元|美元|单|场)?|GMV|CTR|CVR|SQL|AI Agent|SOP|A\/B Test(?:ing)?|Python|Excel|Prompt Engineering/gi) || [];
+        return [...new Set(terms.map(item => item.trim()).filter(Boolean))];
+      };
+      const richText = (item, extraHighlights) => {
+        const source = typeof item === 'string' ? { text: item, highlights: [] } : (item || {});
+        const text = String(source.text || '');
+        const terms = [...new Set([...(source.highlights || []), ...(extraHighlights || []), ...autoHighlightTerms(text)].map(String).map(value => value.trim()).filter(Boolean))];
+        const ranges = [];
+        terms.forEach(term => {
+          let offset = 0;
+          const lowerText = text.toLocaleLowerCase();
+          const lowerTerm = term.toLocaleLowerCase();
+          while (lowerTerm && offset < text.length) {
+            const index = lowerText.indexOf(lowerTerm, offset);
+            if (index < 0) break;
+            ranges.push({ start: index, end: index + term.length });
+            offset = index + term.length;
+          }
+        });
+        ranges.sort((a, b) => a.start - b.start || b.end - a.end);
+        const accepted = [];
+        ranges.forEach(range => {
+          if (!accepted.some(itemRange => range.start < itemRange.end && range.end > itemRange.start)) accepted.push(range);
+        });
+        accepted.sort((a, b) => a.start - b.start);
+        const fragment = document.createDocumentFragment();
+        let cursor = 0;
+        accepted.forEach(range => {
+          if (range.start > cursor) fragment.append(document.createTextNode(text.slice(cursor, range.start)));
+          fragment.append(el('strong', 'highlight', text.slice(range.start, range.end)));
+          cursor = range.end;
+        });
+        if (cursor < text.length) fragment.append(document.createTextNode(text.slice(cursor)));
+        return fragment;
+      };
       const section = title => {
         const wrap = el('section', 'section');
         wrap.append(el('h2', 'section-title', title));
         root.append(wrap);
         return wrap;
       };
-      const bulletList = items => {
+      const bulletList = (items, extraHighlights) => {
         const ul = el('ul', 'fact-list');
-        (items || []).forEach(item => ul.append(el('li', '', typeof item === 'string' ? item : item.text)));
+        (items || []).forEach(item => {
+          const li = el('li', '');
+          li.append(richText(item, extraHighlights));
+          ul.append(li);
+        });
         return ul;
       };
-      const factBlock = (labelText, content) => {
+      const factBlock = (labelText, content, extraHighlights) => {
         const block = el('div', 'fact-block');
         block.append(el('div', 'fact-label', labelText));
         const body = el('div', 'fact-content');
-        if (Array.isArray(content)) body.append(bulletList(content));
+        if (Array.isArray(content)) body.append(bulletList(content, extraHighlights));
         else if (content instanceof Node) body.append(content);
         else body.textContent = content || '';
         block.append(body);
@@ -326,6 +394,20 @@
         contacts.append(wrap);
       });
       masthead.append(contacts);
+      const photo = p.photo || {};
+      if (photo.confirmed && /^data:image\/(?:png|jpeg|webp);base64,/i.test(String(photo.src || ''))) {
+        const frame = el('div', 'photo-frame');
+        const image = el('img', 'profile-photo');
+        image.src = photo.src;
+        image.alt = `${p.name || '候选人'}照片`;
+        const crop = photo.crop || {};
+        image.style.objectPosition = `${Number(crop.x ?? 50)}% ${Number(crop.y ?? 50)}%`;
+        image.style.transform = `scale(${Math.max(1, Math.min(2, Number(crop.zoom || 1)))})`;
+        image.addEventListener('error', () => frame.remove(), { once: true });
+        frame.append(image);
+        masthead.append(frame);
+        masthead.classList.add('has-photo');
+      }
       root.append(masthead);
 
       if ((data.education || []).length) {
@@ -347,6 +429,27 @@
         });
       }
 
+      const verifiedEndorsements = (data.endorsements || []).filter(item => item && item.text && allowedVerification(item.verification)).slice(0, 3);
+      const positioningSummary = p.summary && p.summary.text && allowedVerification(p.summary.verification) ? p.summary : null;
+      if (verifiedEndorsements.length || positioningSummary) {
+        const summary = el('section', 'professional-summary');
+        summary.append(el('div', 'professional-summary-label', verifiedEndorsements.length ? '专业评价 / 外部认可' : '候选人定位'));
+        const body = el('div', 'professional-summary-body');
+        if (verifiedEndorsements.length) verifiedEndorsements.forEach(item => {
+          const paragraph = el('p', '');
+          paragraph.append(richText(item));
+          if (item.source) paragraph.append(document.createTextNode(`（${item.source}）`));
+          body.append(paragraph);
+        });
+        else {
+          const paragraph = el('p', '');
+          paragraph.append(richText(positioningSummary));
+          body.append(paragraph);
+        }
+        summary.append(body);
+        root.append(summary);
+      }
+
       if ((data.experience || []).length) {
         const s = section('实习 / 工作经历');
         data.experience.forEach(exp => {
@@ -357,10 +460,11 @@
           if (logo) left.append(logo);
           left.append(el('span', 'company-name', exp.company));
           if (exp.team) left.append(el('span', 'company-team', `｜${exp.team}`));
+          const experienceLinks = [...(exp.links || []), ...(exp.link ? [exp.link] : [])].filter(item => item && item.url && allowedVerification(item.verification || 'user_attested'));
+          experienceLinks.forEach(item => left.append(link(item.label || '作品链接', item.url, 'company-link')));
           if ((exp.tags || []).length) left.append(el('span', 'company-tags', `｜${exp.tags.join(' · ')}`));
           const right = el('div', 'company-right');
           right.append(el('span', 'dates', exp.dates || ''));
-          if (exp.link) right.append(link(exp.link.label || '相关链接', exp.link.url, 'company-link'));
           bar.append(left, right);
           wrap.append(bar);
           (exp.projects || []).forEach(project => {
@@ -369,11 +473,11 @@
             title.append(el('span', 'project-title', project.name));
             if (project.subtitle) title.append(el('span', 'project-subtitle', `— ${project.subtitle}`));
             block.append(title);
-            if ((project.background || []).length) block.append(factBlock('背景：', project.background));
-            if ((project.impact || []).length) block.append(factBlock('指标与效果：', project.impact));
-            if ((project.responsibilities || []).length) block.append(factBlock('我的职责：', project.responsibilities));
-            if ((project.actions || []).length) block.append(factBlock('关键动作 / 方法：', project.actions));
-            if ((project.keywords || []).length) block.append(factBlock('技术关键词：', el('div', 'keywords', project.keywords.join(' / '))));
+            const projectHighlights = project.keywords || [];
+            if ((project.background || []).length) block.append(factBlock('背景与目标', project.background, projectHighlights));
+            const responsibilityItems = [...(project.responsibilities || []), ...(project.actions || [])];
+            if (responsibilityItems.length) block.append(factBlock('我的职责', responsibilityItems, projectHighlights));
+            if ((project.impact || []).length) block.append(factBlock('数据与指标', project.impact, projectHighlights));
             wrap.append(block);
           });
           s.append(wrap);
@@ -426,3 +530,4 @@
   </script>
 </body>
 </html>
+

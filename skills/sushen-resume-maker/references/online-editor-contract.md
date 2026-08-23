@@ -40,6 +40,9 @@ Owner、责任边界和数字归因不得成为连续追问主题。只有当某
 
 - 顶层结构遵循 [resume-schema.md](resume-schema.md)。
 - 可见 bullet 保留 `verification`、`source_note` 与 `claim_ids`。
+- A4 实习经历只显示三个区块：`background` 为背景与目标，`responsibilities + actions` 合并为我的职责，`impact` 为数据与指标；`missingMetrics` 仅作编辑器提示。
+- `highlights[]` 只允许引用对应文本中真实存在的片段，由模板通过安全文本节点和 `<strong>` 节点渲染。
+- `experience.links[]`、`profile.photo` 与 `endorsements[]` 必须保留来源和验证状态；未确认照片、无来源链接和无证据外部认可不得进入正式简历。
 - 在线编辑器允许修改可见文本与排序，但不能自动判断新内容是否真实。
 - 用户新增指标、强角色词、项目状态或市场信息后，重新运行 Ledger、Matrix 与 Interview Defense 校验。
 
@@ -66,3 +69,4 @@ Owner、责任边界和数字归因不得成为连续追问主题。只有当某
 3. 把解析文字放入可编辑的原文校对区；用户确认前不得建立只读 `sourceResume`。
 4. 校对后再次运行质量检测；不通过时阻止结构识别和一键酥神化。
 5. 将解析方法、质量报告和 `user_confirmed: true` 保存到 `sourceResume.source_file`，供事实追溯。
+

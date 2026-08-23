@@ -5,11 +5,20 @@
     "name": "示例同学",
     "headline": "跨境电商运营｜直播经营分析 · Partner Operations · Conversion Optimization",
     "location": "上海",
+    "summary": {
+      "text": "跨境电商运营方向候选人，具备直播经营分析、合作方运营与SOP沉淀能力。",
+      "verification": "source_grounded",
+      "source_note": "公开演示数据",
+      "claim_ids": ["DEMO-C-000"],
+      "highlights": ["直播经营分析", "SOP"]
+    },
+    "photo": {"src": "", "crop": {"x": 50, "y": 50, "zoom": 1}, "confirmed": false},
     "contacts": [
       {"label": "邮箱", "value": "demo@example.com", "url": "mailto:demo@example.com"},
       {"label": "到岗", "value": "每周5天 · 连续6个月"}
     ]
   },
+  "endorsements": [],
   "education": [
     {
       "institution": "示例大学",
@@ -33,6 +42,9 @@
       "dates": "2026.01 - 2026.06",
       "brand": "red",
       "tags": ["Live Commerce", "Partner Operations", "Funnel Analytics"],
+      "links": [
+        {"label": "作品集", "url": "https://example.com/portfolio", "verification": "user_attested"}
+      ],
       "projects": [
         {
           "name": "直播经营分析",
@@ -58,9 +70,11 @@
               "text": "整理直播脚本与后台数据，按内容、时段和转化路径定位问题并提出下一轮测试假设。",
               "verification": "source_grounded",
               "source_note": "公开演示数据",
-              "claim_ids": ["DEMO-C-004"]
+              "claim_ids": ["DEMO-C-004"],
+              "highlights": ["后台数据", "转化路径", "测试假设"]
             }
           ],
+          "actions": [],
           "keywords": ["Live Funnel", "A/B Testing", "PCU / ACU", "Lead Conversion"]
         },
         {
@@ -90,6 +104,7 @@
               "claim_ids": ["DEMO-C-007"]
             }
           ],
+          "actions": [],
           "keywords": ["Partner Operations", "Onboarding SOP", "Requirement Triage"]
         }
       ]
@@ -100,6 +115,7 @@
       "dates": "2025.08 - 2025.12",
       "brand": "blue",
       "tags": ["Shopify", "Google Analytics", "Conversion Funnel"],
+      "links": [],
       "projects": [
         {
           "name": "商品经营看板",
@@ -125,9 +141,11 @@
               "text": "维护PV、UV、CTR、加购率和支付转化率等指标，并记录页面版本变化。",
               "verification": "source_grounded",
               "source_note": "公开演示数据",
-              "claim_ids": ["DEMO-C-010"]
+              "claim_ids": ["DEMO-C-010"],
+              "highlights": ["PV", "UV", "CTR", "支付转化率"]
             }
           ],
+          "actions": [],
           "keywords": ["Shopify", "Google Analytics", "PV / UV / CTR", "Conversion Optimization"]
         }
       ]
@@ -140,3 +158,4 @@
   ],
   "skills": ["Excel数据透视", "Shopify", "Google Analytics", "直播经营分析", "SOP设计", "A/B Testing"]
 }
+
