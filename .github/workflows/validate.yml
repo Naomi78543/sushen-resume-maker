@@ -60,6 +60,7 @@ jobs:
               root / "scripts/validate_claim_ledger.py",
               root / "scripts/validate_jd_matrix.py",
               root / "scripts/validate_interview_defense.py",
+              root / "scripts/check_utf8.py",
           ]
           missing = [str(path) for path in required if not path.is_file()]
           if missing:
@@ -86,6 +87,9 @@ jobs:
           node --check editor/app.js
           node --check transform/app.js
           python -m json.tool editor/sample.resume.json > /dev/null
+
+      - name: Validate UTF-8 and critical Chinese text
+        run: python skills/sushen-resume-maker/scripts/check_utf8.py .
 
       - name: Reject generated files and Python caches
         run: |

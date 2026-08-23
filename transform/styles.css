@@ -100,6 +100,7 @@ button,input { font: inherit; }
 }
 .status { padding: 5px 9px; border-radius: 999px; color: var(--muted); background: #ece9e1; font-size: 11px; white-space: nowrap; }
 .status.safe { color: #49613a; background: #edf3e8; }
+.status.danger { color: #8f3027; background: #fae9e5; }
 
 .dropzone {
   display: grid;
@@ -134,6 +135,21 @@ button,input { font: inherit; }
 .file-row small { color: var(--muted); }
 .file-type { padding: 5px 7px; border-radius: 4px; color: #fff; background: var(--green); font-size: 8px; font-weight: 850; }
 .text-button { border: 0; color: var(--blue); background: transparent; cursor: pointer; font-weight: 750; }
+
+.review-intro { margin: 12px 0; color: var(--muted); }
+.quality-panel { margin-bottom: 14px; padding: 14px; border: 1px solid var(--line); background: #f7f6f1; }
+.quality-panel > div:first-child { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.quality-panel > p { margin: 10px 0 0; color: var(--muted); font-size: 12px; }
+.quality-stats { display: grid; grid-template-columns: repeat(4,1fr); margin-top: 12px; border: 1px solid var(--line); background: #fff; }
+.quality-stats div { display: grid; gap: 1px; padding: 10px 12px; border-right: 1px solid var(--line); }
+.quality-stats div:last-child { border-right: 0; }
+.quality-stats strong { color: var(--blue); font: 800 20px Georgia,serif; }
+.quality-stats span { color: var(--muted); font-size: 10px; }
+.source-review-field { display: grid; gap: 7px; color: var(--blue); font-weight: 750; }
+.source-review-field textarea { width: 100%; min-height: 340px; resize: vertical; padding: 14px; border: 1px solid #bdc9cf; border-radius: 7px; color: var(--ink); background: #fff; font: 13px/1.65 ui-monospace,SFMono-Regular,Consolas,"Microsoft YaHei",monospace; }
+.source-review-field textarea:focus { outline: 2px solid rgba(36,85,121,.2); border-color: var(--blue); }
+.confirm-row { display: flex; gap: 9px; align-items: flex-start; margin-top: 12px; padding: 11px 12px; border-left: 4px solid var(--clay); color: #6d4d42; background: #fff3ee; font-size: 12px; cursor: pointer; }
+.confirm-row input { margin-top: 3px; accent-color: var(--blue); }
 
 .recognition-layout { display: grid; grid-template-columns: 1.2fr .8fr; gap: 18px; margin-top: 16px; }
 .recognition-layout h3 { margin: 0 0 10px; color: var(--blue); font: 750 17px Georgia,"Songti SC",serif; }
@@ -225,6 +241,9 @@ button,input { font: inherit; }
   .stats div:nth-child(2) { border-right: 0; }
   .stats div:nth-child(-n+2) { border-bottom: 1px solid var(--line); }
   .loading-steps { grid-template-columns: 1fr 1fr; }
+  .quality-stats { grid-template-columns: 1fr 1fr; }
+  .quality-stats div:nth-child(2) { border-right: 0; }
+  .quality-stats div:nth-child(-n+2) { border-bottom: 1px solid var(--line); }
   .result-actions { align-items: stretch; flex-direction: column; }
 }
 @media (max-width: 560px) {

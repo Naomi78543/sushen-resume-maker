@@ -91,7 +91,9 @@ $CODEX_HOME/skills/sushen-resume-maker
 
 `transform/` 一键酥神化支持：
 
-- 上传并解析 PDF（PDF.js）或 DOCX（Mammoth.js）；
+- 上传并解析 PDF（PDF.js）或 DOCX（Mammoth.js），逐页检测乱码率、异常字符率、有效中文比例和识别行数；
+- PDF 原生文字质量不合格时自动切换 Tesseract.js 中英文 OCR；
+- 在结构识别前校对解析原文并人工确认公司、岗位、时间、数字和 bullet；未确认或质量不合格时禁止继续；
 - 抽取基本信息、教育、经历、项目与技能；
 - 将原始事实保存为只读 sourceResume，将同源结构重组结果保存为可编辑 optimizedResume；
 - 校验公司、学校、岗位、项目、时间和数字，发现新增事实时阻止进入最终简历；

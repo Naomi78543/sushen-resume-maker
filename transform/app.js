@@ -8,7 +8,10 @@
   const PDFJS_WORKER_URL = "https://cdn.jsdelivr.net/npm/pdfjs-dist@6.1.200/build/pdf.worker.min.mjs";
   const PDFJS_ASSET_ROOT = "https://cdn.jsdelivr.net/npm/pdfjs-dist@6.1.200/";
   const MAMMOTH_URL = "https://cdn.jsdelivr.net/npm/mammoth@1.10.0/mammoth.browser.min.js";
+  const TESSERACT_URL = "https://cdn.jsdelivr.net/npm/tesseract.js@7.0.0/dist/tesseract.min.js";
   const ALLOWED_FILE = /\.(pdf|docx)$/i;
+  const MAX_FILE_BYTES = 20 * 1024 * 1024;
+  const MAX_PDF_PAGES = 20;
   const SECTION_RULES = [
     ["education", /^(教育背景|教育经历|教育)$/i],
     ["experience", /^(实习经历|工作经历|工作经验|职业经历|实践经历|新媒体经历|新媒体经验|自媒体经历|自媒体经验|内容创作经历)$/i],
@@ -36,6 +39,13 @@
   let optimizedResume = null;
   let pdfjsPromise = null;
   let mammothPromise = null;
+  let tesseractPromise = null;
+  let ocrWorker = null;
+  let extractedText = "";
+  let extractionReport = null;
+  let extractionMethod = "";
+  let sourceConfirmed = false;
+  let importBusy = false;
   let toastTimer = 0;
 
   function clone(value) {
@@ -85,6 +95,41 @@
     return String(text || "").replace(/\r\n?/g, "\n").split("\n").map(cleanLine).filter(Boolean);
   }
 
+  function analyzeTextQuality(text) {
+    const value = String(text || "").normalize("NFKC");
+    const compact = value.replace(/\s/g, "");
+    const total = compact.length;
+    const chinese = (compact.match(/[\u3400-\u4dbf\u4e00-\u9fff]/g) || []).length;
+    const abnormal = (compact.match(/[\u0000-\u0008\u000b\u000c\u000e-\u001f\ufffd\ue000-\uf8ff]/g) || []).length;
+    const mojibake = (compact.match(/(?:\u951f\u65a4\u62f7|\u00ef\u00bf\u00bd|\u00c3.|\u00c2.|\u00e2\u20ac|\u00e6[\u0080-\u00ff]|\u00e5[\u0080-\u00ff]|\u00e7[\u0080-\u00ff])/g) || []).join("").length;
+    const readable = (compact.match(/[A-Za-z0-9\u3400-\u4dbf\u4e00-\u9fff，。；：！？、（）()《》【】“”‘’·%+@._\-\/]/g) || []).length;
+    const lineCount = linesFromText(value).length;
+    const abnormalRatio = total ? abnormal / total : 1;
+    const mojibakeRatio = total ? mojibake / total : 1;
+    const chineseRatio = total ? chinese / total : 0;
+    const readableRatio = total ? readable / total : 0;
+    const reasons = [];
+    if (total < 30) reasons.push("有效文字少于 30 个字符");
+    if (lineCount < 3) reasons.push("有效行数少于 3 行");
+    if (abnormalRatio > 0.01) reasons.push("异常字符比例过高");
+    if (mojibakeRatio > 0.005) reasons.push("检测到疑似乱码");
+    if (readableRatio < 0.78) reasons.push("可读字符比例过低");
+    return {
+      passed: reasons.length === 0,
+      characters: total,
+      lineCount,
+      chineseRatio,
+      abnormalRatio,
+      mojibakeRatio,
+      readableRatio,
+      reasons
+    };
+  }
+
+  function percent(value) {
+    return (Number(value || 0) * 100).toFixed(1) + "%";
+  }
+
   function loadScript(url, globalName) {
     if (window[globalName]) return Promise.resolve(window[globalName]);
     return new Promise((resolve, reject) => {
@@ -119,6 +164,41 @@
     return mammothPromise;
   }
 
+  async function ensureTesseract() {
+    if (!tesseractPromise) {
+      tesseractPromise = loadScript(TESSERACT_URL, "Tesseract").then(() => {
+        if (!window.Tesseract) throw new Error("OCR 组件初始化失败");
+        return window.Tesseract;
+      });
+    }
+    return tesseractPromise;
+  }
+
+  function updateImportProgress(message) {
+    $("fileStatus").textContent = message;
+    $("fileStatus").classList.remove("safe");
+  }
+
+  function translateOcrStatus(status) {
+    const labels = {
+      "loading tesseract core": "加载 OCR 核心",
+      "initializing tesseract": "初始化 OCR",
+      "loading language traineddata": "下载中英文识别模型",
+      "initializing api": "准备 OCR 引擎",
+      "recognizing text": "OCR 识别文字"
+    };
+    return labels[status] || status || "OCR 处理中";
+  }
+
+  async function getOcrWorker() {
+    if (ocrWorker) return ocrWorker;
+    const Tesseract = await ensureTesseract();
+    ocrWorker = await Tesseract.createWorker(["chi_sim", "eng"], 1, {
+      logger: event => updateImportProgress(`${translateOcrStatus(event.status)} ${Math.round(Number(event.progress || 0) * 100)}%`)
+    });
+    return ocrWorker;
+  }
+
   function pdfItemsToLines(items) {
     const positioned = items.filter(item => item && cleanLine(item.str)).map(item => ({
       text: cleanLine(item.str),
@@ -148,6 +228,20 @@
     }).filter(Boolean);
   }
 
+  async function renderPdfPage(page) {
+    const base = page.getViewport({ scale: 1 });
+    const scale = Math.min(2.4, 2200 / Math.max(1, base.width));
+    const viewport = page.getViewport({ scale });
+    const canvas = document.createElement("canvas");
+    canvas.width = Math.ceil(viewport.width);
+    canvas.height = Math.ceil(viewport.height);
+    const context = canvas.getContext("2d", { alpha: false });
+    context.fillStyle = "#fff";
+    context.fillRect(0, 0, canvas.width, canvas.height);
+    await page.render({ canvasContext: context, viewport }).promise;
+    return canvas;
+  }
+
   async function extractPdfText(file) {
     const pdfjs = await ensurePdfJs();
     const bytes = new Uint8Array(await file.arrayBuffer());
@@ -158,22 +252,50 @@
       standardFontDataUrl: PDFJS_ASSET_ROOT + "standard_fonts/"
     });
     const pdf = await task.promise;
+    if (pdf.numPages > MAX_PDF_PAGES) throw new Error(`PDF 共 ${pdf.numPages} 页，超过 ${MAX_PDF_PAGES} 页在线解析上限`);
     const pages = [];
+    const pageReports = [];
+    let ocrPages = 0;
     for (let pageNo = 1; pageNo <= pdf.numPages; pageNo += 1) {
+      updateImportProgress(`读取 PDF 第 ${pageNo}/${pdf.numPages} 页`);
       const page = await pdf.getPage(pageNo);
       const content = await page.getTextContent();
-      pages.push(pdfItemsToLines(content.items).join("\n"));
+      const direct = pdfItemsToLines(content.items).join("\n");
+      const directReport = analyzeTextQuality(direct);
+      let pageText = direct;
+      let method = "PDF 原生文字";
+      if (!directReport.passed) {
+        updateImportProgress(`第 ${pageNo} 页原生文字质量不合格，切换 OCR`);
+        const worker = await getOcrWorker();
+        const canvas = await renderPdfPage(page);
+        const result = await worker.recognize(canvas);
+        pageText = String(result.data && result.data.text || "").trim();
+        method = "OCR";
+        ocrPages += 1;
+      }
+      const finalReport = analyzeTextQuality(pageText);
+      pages.push(pageText);
+      pageReports.push({ page: pageNo, method, direct: directReport, final: finalReport });
+      page.cleanup();
     }
-    return pages.join("\n\n");
+    const text = pages.join("\n\n");
+    return {
+      text,
+      method: ocrPages ? `PDF 原生文字 + OCR（${ocrPages}/${pdf.numPages} 页）` : `PDF 原生文字（${pdf.numPages} 页）`,
+      quality: analyzeTextQuality(text),
+      pages: pageReports
+    };
   }
 
   async function extractDocxText(file) {
     const mammoth = await ensureMammoth();
     const result = await mammoth.extractRawText({ arrayBuffer: await file.arrayBuffer() });
-    return cleanLine(result.value).length ? result.value : "";
+    const text = cleanLine(result.value).length ? result.value : "";
+    return { text, method: "DOCX 原生文字", quality: analyzeTextQuality(text), pages: [] };
   }
 
   async function extractFileText(file) {
+    if (file.size > MAX_FILE_BYTES) throw new Error("文件超过 20 MB 在线解析上限");
     if (/\.pdf$/i.test(file.name)) return extractPdfText(file);
     if (/\.docx$/i.test(file.name)) return extractDocxText(file);
     throw new Error("仅支持 PDF / DOCX");
@@ -419,7 +541,7 @@
     });
   }
 
-  function buildSourceResume(text, file) {
+  function buildSourceResume(text, file, extraction) {
     const lines = linesFromText(text);
     if (lines.join("").length < 30) throw new Error("文件中未提取到足够文字；扫描版 PDF 目前不支持，且不会改用示例数据");
     const sections = splitSections(lines);
@@ -435,7 +557,9 @@
         size: file.size,
         type: file.type || (/\.pdf$/i.test(file.name) ? "application/pdf" : "application/vnd.openxmlformats-officedocument.wordprocessingml.document"),
         lastModified: file.lastModified,
-        parser: /\.pdf$/i.test(file.name) ? "pdfjs-dist@6.1.200" : "mammoth@1.10.0"
+        parser: extraction && extraction.method || (/\.pdf$/i.test(file.name) ? "pdfjs-dist@6.1.200" : "mammoth@1.10.0"),
+        quality: extraction && extraction.quality || analyzeTextQuality(text),
+        user_confirmed: true
       },
       raw_text: text,
       profile: contactProfile(sections.profile.length ? sections.profile : lines.slice(0, 8)),
@@ -641,9 +765,78 @@
     }));
   }
 
+  function renderQualityReport(report, method) {
+    const values = [
+      [percent(report.mojibakeRatio), "乱码率"],
+      [percent(report.abnormalRatio), "异常字符率"],
+      [percent(report.chineseRatio), "有效中文比例"],
+      [report.lineCount, "识别行数"]
+    ];
+    $("qualityStats").replaceChildren(...values.map(([value, label]) => {
+      const item = document.createElement("div");
+      const strong = document.createElement("strong");
+      const span = document.createElement("span");
+      strong.textContent = value;
+      span.textContent = label;
+      item.append(strong, span);
+      return item;
+    }));
+    $("qualityMethod").textContent = method;
+    $("qualityStatus").textContent = report.passed ? "自动检测通过，仍需人工确认" : "自动检测未通过，请校对或重新上传";
+    $("qualityStatus").className = "status " + (report.passed ? "safe" : "danger");
+    $("qualityReasons").textContent = report.reasons.length ? report.reasons.join("；") : "未发现明显乱码或异常字符。";
+  }
+
+  function showSourceReview(text, report, method) {
+    $("sourceText").value = text;
+    $("confirmSource").checked = false;
+    $("confirmSourceButton").disabled = true;
+    renderQualityReport(report, method);
+    $("reviewSection").classList.remove("hidden");
+    $("recognitionSection").classList.add("hidden");
+    $("reviewSection").scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+
+  function confirmReviewedSource() {
+    if (!selectedFile || !extractedText) return showToast("请先上传并解析简历", true);
+    if (!$("confirmSource").checked) return showToast("请先确认原文已经人工校对", true);
+    const reviewedText = $("sourceText").value.trim();
+    const report = analyzeTextQuality(reviewedText);
+    renderQualityReport(report, extractionMethod + " · 人工校对后");
+    if (!report.passed) {
+      sourceConfirmed = false;
+      $("confirmSource").checked = false;
+      $("confirmSourceButton").disabled = true;
+      return showToast("原文质量仍未通过：" + report.reasons.join("、"), true);
+    }
+    try {
+      sourceResume = deepFreeze(buildSourceResume(reviewedText, selectedFile, {
+        method: extractionMethod,
+        quality: report
+      }));
+      localStorage.setItem(SOURCE_STORAGE_KEY, JSON.stringify(sourceResume));
+      extractedText = reviewedText;
+      extractionReport = report;
+      sourceConfirmed = true;
+      $("reviewStatus").textContent = "原文已确认";
+      showRecognition();
+      showToast("原文已确认，现可开始酥神化");
+    } catch (error) {
+      sourceConfirmed = false;
+      sourceResume = null;
+      showToast("结构识别失败：" + error.message, true);
+    }
+  }
+
   function resetResumeState() {
     sourceResume = null;
     optimizedResume = null;
+    extractedText = "";
+    extractionReport = null;
+    extractionMethod = "";
+    sourceConfirmed = false;
+    localStorage.removeItem(SOURCE_STORAGE_KEY);
+    $("reviewSection").classList.add("hidden");
     $("recognitionSection").classList.add("hidden");
     $("loadingSection").classList.add("hidden");
     $("resultSection").classList.add("hidden");
@@ -661,7 +854,7 @@
   }
 
   async function selectFile(file) {
-    if (!file) return;
+    if (!file || importBusy) return;
     resetResumeState();
     selectedFile = null;
     if (!ALLOWED_FILE.test(file.name)) {
@@ -674,15 +867,18 @@
     $("fileStatus").textContent = "正在解析";
     $("selectedFile").classList.remove("hidden");
     $("dropzone").classList.add("has-file");
+    importBusy = true;
     try {
-      const text = await extractFileText(file);
-      sourceResume = deepFreeze(buildSourceResume(text, file));
-      localStorage.setItem(SOURCE_STORAGE_KEY, JSON.stringify(sourceResume));
+      const result = await extractFileText(file);
+      if (!result.text.trim()) throw new Error("文件中没有提取到可校对文字");
       selectedFile = file;
-      $("fileMeta").textContent = formatSize(file.size) + " · 已从文件正文提取 " + linesFromText(text).length + " 行";
-      $("fileStatus").textContent = "真实简历已解析";
-      showRecognition();
-      showToast("已解析真实简历；未使用示例数据");
+      extractedText = result.text;
+      extractionReport = result.quality || analyzeTextQuality(result.text);
+      extractionMethod = result.method || "文件文字提取";
+      $("fileMeta").textContent = `${formatSize(file.size)} · ${extractionMethod} · ${extractionReport.lineCount} 行`;
+      $("fileStatus").textContent = extractionReport.passed ? "等待原文确认" : "需要人工校对";
+      showSourceReview(extractedText, extractionReport, extractionMethod);
+      showToast(extractionReport.passed ? "解析完成，请校对并确认原文" : "检测到解析质量问题，请校对或重新上传", !extractionReport.passed);
     } catch (error) {
       selectedFile = null;
       sourceResume = null;
@@ -690,8 +886,11 @@
       $("fileStatus").textContent = "解析失败";
       $("fileMeta").textContent = formatSize(file.size) + " · " + error.message;
       $("recognitionSection").classList.add("hidden");
+      $("reviewSection").classList.add("hidden");
       $("resultSection").classList.add("hidden");
       showToast(error.message + "；未回退到示例简历", true);
+    } finally {
+      importBusy = false;
     }
   }
 
@@ -727,7 +926,7 @@
   }
 
   async function startTransform() {
-    if (!selectedFile || !sourceResume) return showToast("请先上传并成功解析真实简历", true);
+    if (!selectedFile || !sourceResume || !sourceConfirmed) return showToast("请先校对并确认原始简历文字", true);
     if (!templateHtml) return showToast("A4 模板尚未加载，请通过本地服务器或 GitHub Pages 打开", true);
     $("startButton").disabled = true;
     try {
@@ -782,6 +981,21 @@
     });
     fileInput.addEventListener("change", () => selectFile(fileInput.files[0]));
     $("replaceButton").addEventListener("click", () => fileInput.click());
+    $("sourceText").addEventListener("input", () => {
+      sourceConfirmed = false;
+      sourceResume = null;
+      optimizedResume = null;
+      localStorage.removeItem(SOURCE_STORAGE_KEY);
+      $("confirmSource").checked = false;
+      $("confirmSourceButton").disabled = true;
+      $("recognitionSection").classList.add("hidden");
+      $("resultSection").classList.add("hidden");
+      renderQualityReport(analyzeTextQuality($("sourceText").value), extractionMethod + " · 已编辑未确认");
+    });
+    $("confirmSource").addEventListener("change", () => {
+      $("confirmSourceButton").disabled = !$("confirmSource").checked;
+    });
+    $("confirmSourceButton").addEventListener("click", confirmReviewedSource);
     $("startButton").addEventListener("click", startTransform);
     $("editorButton").addEventListener("click", enterEditor);
   }

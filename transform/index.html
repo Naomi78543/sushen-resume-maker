@@ -41,7 +41,7 @@
       <div id="dropzone" class="dropzone" tabindex="0" role="button" aria-label="选择 PDF 或 DOCX 简历">
         <span class="upload-symbol" aria-hidden="true">↑</span>
         <strong>选择 PDF / DOCX 文件</strong>
-        <span>PDF / DOCX 将在浏览器本地解析；扫描版 PDF 暂不支持</span>
+        <span>PDF / DOCX 将在浏览器本地解析；低质量或扫描版 PDF 自动切换中英文 OCR</span>
         <input id="fileInput" type="file" accept=".pdf,.docx,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document" hidden>
       </div>
       <div id="selectedFile" class="file-row hidden" aria-live="polite">
@@ -51,9 +51,36 @@
       </div>
     </section>
 
+    <section id="reviewSection" class="stage hidden" aria-labelledby="reviewTitle">
+      <header class="stage-head">
+        <div><span class="step-no">02</span><div><span class="eyebrow">SOURCE REVIEW</span><h2 id="reviewTitle">校对原始简历文字</h2></div></div>
+        <span id="reviewStatus" class="status">等待人工确认</span>
+      </header>
+      <p class="review-intro">系统先检测解析质量，但 PDF 字体映射和 OCR 都可能出现错字。请确认公司、岗位、时间、数字和每条经历与原文件一致；未确认不能继续酥神化。</p>
+      <div class="quality-panel">
+        <div>
+          <strong id="qualityMethod">文件文字提取</strong>
+          <span id="qualityStatus" class="status">等待检测</span>
+        </div>
+        <div id="qualityStats" class="quality-stats"></div>
+        <p id="qualityReasons"></p>
+      </div>
+      <label class="source-review-field" for="sourceText">
+        <span>解析原文（可直接修正错字、断行和乱码）</span>
+        <textarea id="sourceText" spellcheck="false" aria-describedby="qualityReasons"></textarea>
+      </label>
+      <label class="confirm-row">
+        <input id="confirmSource" type="checkbox">
+        <span>我已对照原文件确认公司、学校、岗位、项目、时间、数字和 bullet；以上文字可作为只读 sourceResume 的事实源。</span>
+      </label>
+      <div class="button-row">
+        <button id="confirmSourceButton" class="button primary" type="button" disabled>确认原文并识别结构</button>
+      </div>
+    </section>
+
     <section id="recognitionSection" class="stage hidden" aria-labelledby="recognitionTitle">
       <header class="stage-head">
-        <div><span class="step-no">02</span><div><span class="eyebrow">RESUME RECOGNITION</span><h2 id="recognitionTitle">简历识别与候选人定位</h2></div></div>
+        <div><span class="step-no">03</span><div><span class="eyebrow">RESUME RECOGNITION</span><h2 id="recognitionTitle">简历识别与候选人定位</h2></div></div>
         <span id="recognitionStatus" class="status safe">等待解析</span>
       </header>
 
@@ -85,7 +112,7 @@
 
     <section id="loadingSection" class="stage hidden" aria-live="polite">
       <header class="stage-head">
-        <div><span class="step-no">03</span><div><span class="eyebrow">TRANSFORMATION</span><h2>正在重构整份简历</h2></div></div>
+        <div><span class="step-no">04</span><div><span class="eyebrow">TRANSFORMATION</span><h2>正在重构整份简历</h2></div></div>
         <span id="loadingProgress" class="status">0 / 7</span>
       </header>
       <ol id="loadingSteps" class="loading-steps">
