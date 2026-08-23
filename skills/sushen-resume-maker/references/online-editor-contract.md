@@ -7,10 +7,20 @@
 GitHub Pages 根目录先进入 `interrogation/`，再进入 `editor/`。拷打台在浏览器本地完成：
 
 1. 输入目标 JD 与经历文本；
-2. 按每轮 1–3 题确认角色、指标、交付状态与岗位缺口；
-3. 人工确认 Claim 的验证状态、个人角色和时态；
-4. 导出 `claim-ledger.json`、`jd-matrix.json` 与 `interview-defense.json`；
-5. 把三个 JSON 交给 Skill 校验并生成 `resume-data.json`，再进入编辑器。
+2. 从经历中识别复杂问题、判断、方法、推动、体系化与影响等潜在线索；
+3. 每轮只问 1–3 个与材料相关的问题，并把有效回答沉淀成“深挖新增亮点” Claim；
+4. 在亮点形成后，人工确认 Claim 的验证状态、个人角色和时态；
+5. 导出 `claim-ledger.json`、`jd-matrix.json` 与 `interview-defense.json`；
+6. 把三个 JSON 交给 Skill 校验并生成 `resume-data.json`，再进入编辑器。
+
+Owner、责任边界和数字归因不得成为连续追问主题。只有当某条新增亮点准备进入简历且确实含强角色词、强因果或指标时，才追加一次准确性校对。
+
+材料入口允许 PDF、扫描版 PDF、PNG、JPG、WebP、TXT、Markdown 和 `resume-data.json`：
+
+- PDF 优先使用 PDF.js 提取原生文本；单页无足够文本时才渲染为图片并 OCR。
+- 图片与扫描页使用 Tesseract.js 中英文 OCR，单批最多 10 个文件、单文件不超过 20MB、PDF 不超过 20 页。
+- 文件内容不得上传项目服务器；第三方库和 OCR 模型可以通过公共 CDN 下载到浏览器。
+- OCR 文字属于未校对候选材料。用户校对之前不得自动标记为 `source_grounded`，也不得据此生成最终简历事实。
 
 纯静态页面不得声称能够调用 AI 完成事实判断或简历改写。自动关键词匹配只能标记为安全初筛；默认使用 `transferable`、`weak` 或 `gap`，不能把相关词命中自动升级为直接强匹配。
 

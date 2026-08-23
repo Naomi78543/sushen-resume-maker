@@ -5,11 +5,11 @@ description: 将真实中文求职材料重构为“酥神/ASU 式”高信息�
 
 # 酥神简历制作与面试防御
 
-把“视觉风格”和“求职推理能力”分开：简历前端复用随技能提供的 ASU 模板；差异化集中在事实审计、经历拷打、JD 取舍和面试防御。
+把“视觉风格”和“求职推理能力”分开：简历前端复用随技能提供的 ASU 模板；差异化集中在挖出原简历遗漏的个人能力、把回答转成高价值亮点、依据 JD 取舍内容，并在最后完成事实校对和面试防御。
 
 ## 必须执行的顺序
 
-`读取材料 → Claim Ledger → Ledger 校验 → JD Matrix → Matrix 校验 → 定向拷打 → 重新校验 → resume-data.json → ASU 模板渲染 → interview-defense.json → 面试问题清单`
+`读取材料 → 初始 Claim Ledger → JD Matrix → 能力深挖 → 新增亮点 Claim → 事实校对与重新匹配 → resume-data.json → ASU 模板渲染 → interview-defense.json → 面试问题清单`
 
 - 未建立 `claim-ledger.json`，不得写简历。
 - 用户提供 JD 时必须建立 `jd-matrix.json`。
@@ -52,15 +52,18 @@ python scripts/validate_jd_matrix.py path/to/jd-matrix.json --ledger path/to/cla
 
 ## 3. 定向拷打经历
 
-完整读取 [references/question-tree.md](references/question-tree.md) 与 [references/evidence-and-roles.md](references/evidence-and-roles.md)。每轮只问 1–3 个最能降低不确定性的问题，优先级为：
+完整读取 [references/question-tree.md](references/question-tree.md) 与 [references/evidence-and-roles.md](references/evidence-and-roles.md)。拷打的主要目标是发现原简历没有写出的竞争力，不是反复审计用户是不是 Owner。每轮只问 1–3 个最有机会产出新亮点的问题，优先级为：
 
-1. 高权重 JD 缺口；
-2. 强角色词与个人责任边界；
-3. 指标分母、时间窗、测量系统和归因；
-4. 项目状态与真实交付物；
-5. 能显著提升岗位匹配度的可迁移经验。
+1. 经历中的复杂问题、主动发现、关键判断与取舍；
+2. 数据或反馈如何转化为洞察、动作与验证；
+3. 沟通推动、无权影响、流程设计和可复用资产；
+4. 原简历遗漏、但能证明高权重 JD 能力的真实案例；
+5. 结果、采用范围、效率、质量、用户反馈等可确认影响；
+6. 仅在候选亮点形成后，对角色、归因、数字和项目状态做一次必要校对。
 
-用户回答后更新 Ledger、Matrix 与 Selection，再运行两个校验器。不能回答的内容不要硬追；降低简历表述并转为面试准备提醒。
+每个有效回答都要转成新的 `origin=interview` Claim，标注对应能力维度，再与原始 Claim 组合成“行动＋方法＋结果”的 bullet 候选。追问应引用用户的实际材料和上一轮回答；禁止连续询问 Owner、最终决策权、团队归因或证据边界。不能回答的内容直接跳过，不得用假设性答案补成事实。
+
+用户回答后更新 Ledger、Matrix 与 Selection，再运行两个校验器。真实性门禁仍然存在，但应作为亮点形成后的最后校对，而不是深挖过程的主题。
 
 ## 4. 生成简历数据
 
@@ -104,8 +107,9 @@ python scripts/validate_resume.py \
 - 保持 `verification`、`source_note` 和 `claim_ids`，避免在线修改后失去证据映射。
 - 用户在线新增数字、Owner、主导、0→1、上线或跨市场表述后，提示重新运行事实与面试防御校验。
 - 默认使用浏览器本地存储，不要求上传候选人数据。
-- 仓库包含 `interrogation/` 在线深度拷打台：用于本地完成 JD 输入、分轮追问、Claim 确认、JD Matrix 初筛和 Interview Defense 导出。
-- 在线拷打台是规则化事实整理界面，不得把自动关键词匹配解释为 AI 判断或直接事实；最终简历仍须读取并校验三个 JSON 后生成。
+- 仓库包含 `interrogation/` 在线深度拷打台：用于本地完成 JD 输入、能力线索识别、分轮深挖、新增亮点 Claim、JD Matrix 初筛和 Interview Defense 导出。
+- 拷打台允许导入 PDF、扫描版 PDF 和简历图片；PDF 先提取原生文本，无文本页和图片使用浏览器端 OCR。OCR 结果只能作为候选材料，必须经用户校对后再建立 Claim。
+- 在线拷打台是规则化能力挖掘与事实整理界面，不得把自动关键词匹配解释为 AI 判断或直接事实；最终简历仍须读取并校验三个 JSON 后生成。
 
 ## 7. 生成面试防御层
 

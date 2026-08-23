@@ -70,6 +70,7 @@
 ```json
 {
   "company": "字节跳动",
+  "companyNormalizedName": "ByteDance",
   "team": "Aily · 大模型应用算法",
   "dates": "2025.02 - 2026.06",
   "brand": "blue",
@@ -81,10 +82,15 @@
       "background": [],
       "impact": [],
       "responsibilities": [],
+      "actions": [],
       "keywords": []
     }
   ]
 }
 ```
+
+`actions` 用于承载可由原始材料直接支持的关键动作与方法，例如分析、拆解、设计、搭建、推动和复盘；不得为了补齐区块而推断原文没有的方法。`background`、`impact`、`responsibilities` 与 `actions` 均使用上文的可见条目对象，并保留同一来源映射。
+
+`companyNormalizedName` 为可选标准化公司名，只用于本地 Logo 匹配，不替代可见的真实公司名称。当前 A4 模板通过 `resolveCompanyLogo(companyNormalizedName || company)` 在本地 `companyLogoMap` 中匹配；找不到或资源加载失败时直接隐藏 Logo。不要把 Logo URL 写入简历正文，也不要因此改写公司事实。
 
 `brand` 只允许 `red`、`blue`、`green`、`gray`。`page_break_before: true` 仅影响 PDF 分页。

@@ -88,6 +88,14 @@ a { color: inherit; }
 .field textarea.tall { min-height: 240px; }
 .field input:focus, .field textarea:focus, .field select:focus { border-color: var(--blue-2); box-shadow: 0 0 0 3px rgba(54,111,150,.12); }
 .field-help { margin: -7px 0 11px; color: var(--muted); font-size: 10px; }
+.source-list { display: flex; flex-wrap: wrap; gap: 6px; margin: 8px 0 12px; }
+.source-item { display: inline-flex; align-items: center; gap: 6px; padding: 6px 8px; border: 1px solid #d3dce1; border-radius: 7px; color: #52616b; background: #f5f9fb; font-size: 10px; }
+.source-item b { color: var(--blue); }
+.import-status { margin: 9px 0 12px; padding: 11px; border: 1px solid #c5d8e2; border-radius: 8px; color: #3e6073; background: #edf5f8; font-size: 11px; }
+.import-status.is-error { color: #874436; border-color: #ebc5b8; background: #fff2ed; }
+.progress-track { height: 6px; margin-top: 8px; border-radius: 999px; background: #dbe5ea; overflow: hidden; }
+.progress-bar { width: 0; height: 100%; border-radius: inherit; background: var(--blue-2); transition: width .2s; }
+.ocr-notice { margin: 8px 0 0; padding: 8px 9px; border-left: 3px solid var(--clay); color: #765044; background: var(--clay-soft); font-size: 10px; }
 .button-row { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px; margin-top: 12px; }
 .button { min-height: 38px; padding: 8px 13px; border: 1px solid #c8c5bc; border-radius: 7px; color: #26333d; background: #fffefa; font-weight: 750; transition: .15s; }
 .button:hover { border-color: #8d989f; background: #fff; transform: translateY(-1px); }
@@ -114,12 +122,14 @@ a { color: inherit; }
 .card-head p { margin: 3px 0 0; color: var(--muted); font-size: 10px; }
 .claim-card.is-usable { border-left: 4px solid var(--green); }
 .claim-card.is-risky { border-left: 4px solid var(--clay); }
+.claim-card.is-discovered { background: linear-gradient(90deg, #f4fbf7 0, #fff 22%); box-shadow: inset 0 3px 0 #7cad91; }
 .claim-text { width: 100%; min-height: 76px; margin-top: 12px; padding: 8px 9px; border: 1px solid #cbc8bf; border-radius: 7px; resize: vertical; }
 .meta-grid { display: grid; grid-template-columns: repeat(4,minmax(0,1fr)); gap: 8px; margin-top: 10px; }
 .meta-grid label { display: grid; gap: 4px; color: var(--muted); font-size: 9px; font-weight: 750; }
 .meta-grid select, .meta-grid input { width: 100%; min-height: 34px; padding: 6px 7px; border: 1px solid var(--line); border-radius: 6px; background: #fffefa; }
 .risk-list { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 10px; }
 .risk-chip { padding: 4px 7px; border-radius: 999px; color: #8a4933; background: #fbeae4; font-size: 9px; font-weight: 750; }
+.ability-chip { padding: 4px 7px; border-radius: 999px; color: #255c42; background: #e3f4e9; font-size: 9px; font-weight: 750; }
 .empty-state { padding: 52px 20px; border: 1px dashed #bbb8ae; border-radius: 10px; color: var(--muted); background: var(--soft); text-align: center; }
 .empty-state h3 { margin: 0 0 6px; color: var(--blue); }
 .compact-button { padding: 5px 8px; border: 1px solid var(--line); border-radius: 6px; color: var(--muted); background: var(--soft); font-size: 10px; }

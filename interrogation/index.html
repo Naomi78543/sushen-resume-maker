@@ -13,11 +13,12 @@
       <span class="brand-mark" aria-hidden="true">酥</span>
       <div>
         <h1>酥神简历工作台</h1>
-        <p>先拷打证据，再写一页简历</p>
+        <p>先挖出竞争力，再写一页简历</p>
       </div>
     </div>
     <nav class="product-nav" aria-label="工作台功能">
       <a class="is-active" href="./">深度拷打</a>
+      <a href="../transform/">一键酥神化</a>
       <a href="../editor/">简历编辑器</a>
     </nav>
     <div class="privacy-badge" title="数据只保存在当前浏览器中">
@@ -29,19 +30,19 @@
   <main class="app-shell">
     <aside class="step-rail" aria-label="拷打流程">
       <div class="rail-intro">
-        <span class="eyebrow">EVIDENCE FIRST</span>
+        <span class="eyebrow">ABILITY MINING FIRST</span>
         <h2>深度拷打流程</h2>
-        <p>每轮只问 1–3 个高价值问题。无法回答时降级，不编事实。</p>
+        <p>每轮只问 1–3 个高价值问题，重点挖出原简历没写出来的能力与成果。</p>
       </div>
       <ol id="stepList" class="step-list">
         <li><button type="button" data-step="intake"><span>01</span><b>材料与 JD</b><small>粘贴真实经历</small></button></li>
-        <li><button type="button" data-step="questions"><span>02</span><b>定向拷打</b><small>角色、指标、结果</small></button></li>
-        <li><button type="button" data-step="claims"><span>03</span><b>Claim Ledger</b><small>确认事实边界</small></button></li>
+        <li><button type="button" data-step="questions"><span>02</span><b>能力深挖</b><small>判断、方法、推动、结果</small></button></li>
+        <li><button type="button" data-step="claims"><span>03</span><b>亮点素材库</b><small>原始事实＋新挖亮点</small></button></li>
         <li><button type="button" data-step="matrix"><span>04</span><b>JD 矩阵</b><small>找强项与缺口</small></button></li>
         <li><button type="button" data-step="defense"><span>05</span><b>面试防御</b><small>压力题与证据</small></button></li>
       </ol>
       <div class="rail-summary">
-        <div><strong id="claimCount">0</strong><span>事实主张</span></div>
+        <div><strong id="claimCount">0</strong><span>亮点素材</span></div>
         <div><strong id="answerCount">0</strong><span>已回答</span></div>
         <div><strong id="coverageValue">0%</strong><span>证据覆盖</span></div>
       </div>
@@ -56,18 +57,19 @@
 
   <template id="intakeTemplate">
     <section class="hero-card">
-      <span class="eyebrow">START HERE</span>
-      <h2>不是先润色，而是先把“你到底做了什么”问清楚</h2>
-      <p>输入目标 JD 和一段重点经历。系统会先拆成原子事实，再针对强角色词、指标口径、交付状态和岗位缺口逐轮追问。</p>
+        <span class="eyebrow">DISCOVER YOUR VALUE</span>
+      <h2>简历写了“做过什么”，深挖要找出“你因此证明了什么能力”</h2>
+      <p>输入目标 JD 和重点经历。系统会沿着业务难度、主动判断、分析方法、资源推动、流程沉淀与实际影响逐轮追问，把原简历遗漏的竞争力补出来。</p>
       <div class="guardrails">
-        <span>不把团队结果算成个人结果</span>
-        <span>不把测试中写成已上线</span>
-        <span>不把可迁移经验写成直接经验</span>
+        <span>发现隐性能力</span>
+        <span>补全方法与复杂度</span>
+        <span>寻找可复用成果</span>
+        <span>最后再校对事实边界</span>
       </div>
     </section>
   </template>
 
-  <input id="materialFile" type="file" accept=".txt,.md,.json,application/json,text/plain,text/markdown" hidden>
+  <input id="materialFile" type="file" accept=".txt,.md,.json,.pdf,application/json,application/pdf,text/plain,text/markdown,image/png,image/jpeg,image/webp,image/bmp" multiple hidden>
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
   <script src="app.js" defer></script>
 </body>

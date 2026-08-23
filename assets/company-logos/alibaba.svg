@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Alibaba">
+  <rect width="64" height="64" rx="12" fill="#fff"/>
+  <path d="M14 32c0-11 7-18 18-18s18 7 18 18-7 18-18 18-18-7-18-18Z" fill="none" stroke="#ff6a00" stroke-width="6"/>
+  <path d="M22 32h20M32 22v20" stroke="#ff6a00" stroke-width="5" stroke-linecap="round"/>
+</svg>

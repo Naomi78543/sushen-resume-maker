@@ -39,10 +39,16 @@ jobs:
               Path("LICENSE"),
               Path("THIRD_PARTY_NOTICES.md"),
               Path("index.html"),
+              Path("interrogation/index.html"),
+              Path("interrogation/app.js"),
+              Path("interrogation/styles.css"),
               Path("editor/index.html"),
               Path("editor/app.js"),
               Path("editor/styles.css"),
               Path("editor/sample.resume.json"),
+              Path("transform/index.html"),
+              Path("transform/app.js"),
+              Path("transform/styles.css"),
               root / "SKILL.md",
               root / "agents/openai.yaml",
               root / "assets/resume_template.html",
@@ -76,7 +82,9 @@ jobs:
 
       - name: Validate editor JavaScript and sample data
         run: |
+          node --check interrogation/app.js
           node --check editor/app.js
+          node --check transform/app.js
           python -m json.tool editor/sample.resume.json > /dev/null
 
       - name: Reject generated files and Python caches

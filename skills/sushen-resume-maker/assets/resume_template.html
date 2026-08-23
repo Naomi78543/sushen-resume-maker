@@ -145,7 +145,15 @@
     .company-bar.brand-blue { border-left-color: #4c8aa5; background: var(--blue-bar); }
     .company-bar.brand-green { border-left-color: var(--olive); background: var(--green-bar); }
     .company-bar.brand-gray { border-left-color: var(--gray-500); background: var(--gray-bar); }
-    .company-left { display: flex; align-items: baseline; min-width: 0; flex-wrap: wrap; gap: 1mm 2mm; }
+    .company-left { display: flex; align-items: center; min-width: 0; flex-wrap: wrap; gap: 1mm 2mm; }
+    .company-logo {
+      width: 20px;
+      height: 20px;
+      flex: 0 0 20px;
+      object-fit: contain;
+      border-radius: 3px;
+      background: rgba(255,255,255,.72);
+    }
     .company-name { color: var(--ink-blue); font-family: var(--serif); font-size: 12.3px; font-weight: 850; }
     .company-team { font-weight: 650; }
     .company-tags { color: var(--gray-700); font-size: 9.2px; }
@@ -240,6 +248,38 @@
           return ['http:', 'https:', 'mailto:'].includes(u.protocol) ? value : null;
         } catch (_) { return null; }
       };
+      const companyLogoMap = Object.freeze({
+        ByteDance: '../assets/company-logos/bytedance.svg',
+        Amazon: '../assets/company-logos/amazon.svg',
+        Tencent: '../assets/company-logos/tencent.svg',
+        Alibaba: '../assets/company-logos/alibaba.svg',
+        Meituan: '../assets/company-logos/meituan.svg',
+        Tesla: '../assets/company-logos/tesla.svg'
+      });
+      const normalizeCompanyName = companyName => {
+        const value = String(companyName || '').trim().toLowerCase();
+        if (/字节|bytedance|tik\s*tok/.test(value)) return 'ByteDance';
+        if (/亚马逊|amazon/.test(value)) return 'Amazon';
+        if (/腾讯|tencent/.test(value)) return 'Tencent';
+        if (/阿里|alibaba|淘宝|天猫/.test(value)) return 'Alibaba';
+        if (/美团|meituan/.test(value)) return 'Meituan';
+        if (/特斯拉|tesla/.test(value)) return 'Tesla';
+        return null;
+      };
+      const resolveCompanyLogo = companyName => {
+        const normalized = normalizeCompanyName(companyName);
+        return normalized ? companyLogoMap[normalized] || null : null;
+      };
+      const companyLogo = companyName => {
+        const src = resolveCompanyLogo(companyName);
+        if (!src) return null;
+        const img = el('img', 'company-logo');
+        img.src = src;
+        img.alt = '';
+        img.setAttribute('aria-hidden', 'true');
+        img.addEventListener('error', () => img.remove(), { once: true });
+        return img;
+      };
       const link = (label, url, cls) => {
         const safe = safeUrl(url);
         if (!safe) return el('span', cls || '', label);
@@ -313,6 +353,8 @@
           const wrap = el('article', 'experience');
           const bar = el('div', `company-bar brand-${['red','blue','green','gray'].includes(exp.brand) ? exp.brand : 'gray'}`);
           const left = el('div', 'company-left');
+          const logo = companyLogo(exp.companyNormalizedName || exp.company);
+          if (logo) left.append(logo);
           left.append(el('span', 'company-name', exp.company));
           if (exp.team) left.append(el('span', 'company-team', `｜${exp.team}`));
           if ((exp.tags || []).length) left.append(el('span', 'company-tags', `｜${exp.tags.join(' · ')}`));
@@ -330,6 +372,7 @@
             if ((project.background || []).length) block.append(factBlock('背景：', project.background));
             if ((project.impact || []).length) block.append(factBlock('指标与效果：', project.impact));
             if ((project.responsibilities || []).length) block.append(factBlock('我的职责：', project.responsibilities));
+            if ((project.actions || []).length) block.append(factBlock('关键动作 / 方法：', project.actions));
             if ((project.keywords || []).length) block.append(factBlock('技术关键词：', el('div', 'keywords', project.keywords.join(' / '))));
             wrap.append(block);
           });

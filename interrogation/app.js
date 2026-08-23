@@ -4,11 +4,17 @@
   const STORAGE_KEY = "sushen-interrogation-v1";
   const HANDOFF_KEY = "sushen-evidence-handoff-v1";
   const CASE_ID = "CASE-LOCAL";
+  const PDFJS_URL = "https://cdn.jsdelivr.net/npm/pdfjs-dist@6.1.200/build/pdf.min.mjs";
+  const PDFJS_WORKER_URL = "https://cdn.jsdelivr.net/npm/pdfjs-dist@6.1.200/build/pdf.worker.min.mjs";
+  const PDFJS_ASSET_ROOT = "https://cdn.jsdelivr.net/npm/pdfjs-dist@6.1.200/";
+  const TESSERACT_URL = "https://cdn.jsdelivr.net/npm/tesseract.js@7.0.0/dist/tesseract.min.js";
+  const MAX_FILE_BYTES = 20 * 1024 * 1024;
+  const MAX_PDF_PAGES = 20;
   const STEPS = ["intake", "questions", "claims", "matrix", "defense"];
   const STEP_META = {
     intake: ["材料与目标 JD", "粘贴真实经历，先拆事实再开始追问"],
-    questions: ["定向深度拷打", "每轮只处理 1–3 个最影响可信度和岗位匹配的问题"],
-    claims: ["Claim Ledger 事实台账", "逐条确认角色、状态与证据；未知内容不会进入正式简历"],
+    questions: ["能力深挖", "从业务难度、判断、分析、推动、沉淀和结果中补出原简历遗漏的竞争力"],
+    claims: ["亮点素材库 · Claim Ledger", "把原始事实与新挖出的能力素材放在一起，最后再做准确性校对"],
     matrix: ["JD Matrix 岗位矩阵", "用已确认 Claim 匹配岗位要求，并明确可迁移边界"],
     defense: ["面试防御", "把强表述、指标和高权重缺口转换成压力追问与安全边界"]
   };
@@ -55,6 +61,9 @@
   const toast = document.getElementById("toast");
   const materialFile = document.getElementById("materialFile");
   let toastTimer = 0;
+  let pdfJsPromise = null;
+  let tesseractPromise = null;
+  let importBusy = false;
   let state = loadState();
   let activeStep = state.activeStep || "intake";
 
@@ -64,6 +73,7 @@
       activeStep: "intake",
       target: { title: "", company: "", experience: "", jd: "" },
       material: "",
+      sources: [],
       claims: [],
       requirements: [],
       rounds: [],
@@ -214,10 +224,26 @@
     form.append(field("完整目标 JD", state.target.jd, value => { state.target.jd = value; }, { multiline: true, tall: true, placeholder: "粘贴职责、任职要求和加分项。系统会拆成 JD Matrix。" }));
     const materialField = field("原始简历或重点经历材料", state.material, value => { state.material = value; }, { multiline: true, tall: true, placeholder: "建议每条事实单独一行：做了什么、对谁做、用了什么方法、留下什么交付物、结果如何。" });
     form.append(materialField);
-    form.append(element("p", { className: "field-help", text: "PDF 无法在纯前端可靠还原结构。可以先复制 PDF 文本，或导入已有 resume-data.json。" }));
+    form.append(element("p", { className: "field-help", text: "支持 PDF、PNG、JPG、WebP、TXT、MD 和 resume-data.json；可一次选择多个文件。" }));
+    if ((state.sources || []).length) {
+      const sources = element("div", { className: "source-list" });
+      state.sources.forEach(source => sources.append(element("span", { className: "source-item" }, [element("b", { text: source.name }), document.createTextNode(`${source.method} · ${source.characters} 字`)])));
+      form.append(sources);
+    }
+    const importStatus = element("div", { className: "import-status" });
+    importStatus.id = "importStatus";
+    importStatus.hidden = true;
+    importStatus.append(element("div", { className: "import-status-text", text: "正在读取材料…" }));
+    const track = element("div", { className: "progress-track" });
+    const bar = element("div", { className: "progress-bar" });
+    bar.id = "importProgressBar";
+    track.append(bar);
+    importStatus.append(track);
+    form.append(importStatus);
+    form.append(element("div", { className: "ocr-notice", text: "PDF 文本和 OCR 可能出现错字、断行或漏字。识别完成后必须先校对文本，再开始 Claim Ledger；扫描件识别首次会下载中文/英文 OCR 模型。" }));
     const actions = element("div", { className: "button-row" });
     actions.append(
-      button("导入 TXT / MD / JSON", "soft", () => materialFile.click()),
+      button("上传 PDF / 图片 / 文本", "soft", () => { if (!importBusy) materialFile.click(); }),
       button("载入脱敏示例", "", loadSample),
       button(state.claims.length ? "重新分析并开始拷打" : "开始首轮拷打", "primary", analyzeMaterial)
     );
@@ -279,7 +305,7 @@
     return [...new Set(risks)];
   }
 
-  function createClaim(text, index, verification) {
+  function createClaim(text, index, verification, origin = "material") {
     const role = detectRole(text);
     const tense = detectTense(text);
     return {
@@ -292,7 +318,8 @@
       verification: strongRole(text) ? "unknown" : (verification || "user_attested"),
       risk_flags: detectRisks(text, role, tense),
       notes: "",
-      selected: !strongRole(text)
+      selected: !strongRole(text),
+      origin
     };
   }
 
@@ -370,7 +397,7 @@
     if (!state.target.jd.trim()) return showToast("请先粘贴目标 JD", true);
     if (!lines.length) return showToast("请至少填写一条真实经历", true);
     if (state.claims.length && !window.confirm("重新分析会覆盖当前 Claim、问题与矩阵，是否继续？")) return;
-    state.claims = lines.map((line, index) => createClaim(line, index));
+    state.claims = lines.map((line, index) => createClaim(line, index, undefined, "material"));
     state.requirements = parseRequirements(state.target.jd);
     refreshRequirementMatches();
     state.rounds = [];
@@ -381,34 +408,74 @@
     navigate("questions");
   }
 
-  function claimQuestionCandidates() {
+  function experienceOpportunityCandidates() {
     const candidates = [];
-    state.claims.forEach(claim => {
-      if (claim.risk_flags.includes("strong_role_term") || claim.risk_flags.includes("missing_role_scope")) {
-        candidates.push({ key: `role-${claim.claim_id}`, category: "role_scope", claimId: claim.claim_id, priority: 100, prompt: `你写了“${shorten(claim.raw_claim)}”。拆开项目后，你本人具体负责哪些模块？谁做最终决策，谁与你协作？`, hint: "回答个人边界、决策权、协作对象；不能确认就写“无法确认”。" });
+    state.claims.filter(claim => claim.origin === "material").forEach(claim => {
+      const text = claim.normalized_claim;
+      if (/数据|分析|指标|下钻|Excel|透视|函数|SQL|转化率|漏斗|复盘/i.test(text)) {
+        candidates.push({ key: `insight-${claim.claim_id}`, dimension: "分析与洞察", category: "insight", claimId: claim.claim_id, priority: 124, prompt: `你写了“${shorten(text)}”。当时具体看了哪些数据或反馈？你发现了什么问题，这个发现最终改变了哪个运营动作或决策？`, hint: "重点不是罗列后台，而是“看到了什么—如何判断—推动了什么变化”。" });
       }
-      if (claim.claim_type === "metric_result" || claim.risk_flags.some(flag => flag.startsWith("missing_") && flag !== "missing_role_scope")) {
-        candidates.push({ key: `metric-${claim.claim_id}`, category: "metric_attribution", claimId: claim.claim_id, priority: 95, prompt: `关于“${shorten(claim.raw_claim)}”：数据来自哪个后台，时间窗、分子分母和基线分别是什么？`, hint: "同时说明这是个人结果、团队结果，还是只能证明同期相关变化。" });
+      if (/SOP|流程|审核|规范|机制|标准|清单/i.test(text)) {
+        candidates.push({ key: `system-${claim.claim_id}`, dimension: "流程沉淀", category: "systemization", claimId: claim.claim_id, priority: 122, prompt: `关于“${shorten(text)}”：做这套流程前最混乱、最耗时或最容易出错的环节是什么？你设计了哪些关键节点，后来谁在使用？`, hint: "这里可能藏着流程设计、标准化和规模化协作能力。" });
       }
-      if (claim.risk_flags.includes("team_result_attribution") || claim.risk_flags.includes("causality_not_established")) {
-        candidates.push({ key: `cause-${claim.claim_id}`, category: "metric_attribution", claimId: claim.claim_id, priority: 92, prompt: `这个结果为什么可以归因于你？同期还有投放、价格、促销、流量或其他团队动作吗？`, hint: "如果没有对照实验，请明确使用“调整期间观察到”而不是强因果。" });
+      if (/沟通|协作|跨团队|供应商|旅行社|合作方|机构|推进|协调/i.test(text)) {
+        candidates.push({ key: `influence-${claim.claim_id}`, dimension: "沟通与推动", category: "influence", claimId: claim.claim_id, priority: 120, prompt: `“${shorten(text)}”背后最难协调的一次需求或冲突是什么？你如何分类需求、统一标准或推动对方行动，最后形成了什么结果？`, hint: "挖的是影响力、优先级判断和复杂协作，不只是“日常沟通”。" });
       }
-      if (["planned", "tested", "unknown"].includes(claim.tense)) {
-        candidates.push({ key: `status-${claim.claim_id}`, category: "resume_claim", claimId: claim.claim_id, priority: 86, prompt: `“${shorten(claim.raw_claim)}”目前到底处于规划、测试、灰度、上线还是稳定运行？有什么交付物能证明？`, hint: "写清状态、使用对象、采用范围和证据位置。" });
+      if (/直播|内容|脚本|口播|出镜|选题|创作者|达人/i.test(text)) {
+        candidates.push({ key: `content-${claim.claim_id}`, dimension: "用户与内容判断", category: "decision", claimId: claim.claim_id, priority: 118, prompt: `在“${shorten(text)}”中，你如何判断受众、商品卖点和内容节奏？有没有一次基于表现或反馈调整脚本/直播方案的具体例子？`, hint: "这里可能藏着用户洞察、内容策略和快速迭代能力。" });
+      }
+      if (/电商|Shopify|TikTok|独立站|商品页|转化|GMV|投放/i.test(text)) {
+        candidates.push({ key: `commerce-${claim.claim_id}`, dimension: "经营与转化", category: "insight", claimId: claim.claim_id, priority: 116, prompt: `针对“${shorten(text)}”，你会怎样拆解从流量到成交的链路？实际发现过哪个关键卡点，并做过什么页面、内容或运营调整？`, hint: "挖出经营意识、漏斗分析和动作闭环。" });
+      }
+      if (/AI|数字人|工具|自动化|产品|需求|测试|JobPilot/i.test(text)) {
+        candidates.push({ key: `product-${claim.claim_id}`, dimension: "产品与创新", category: "method_decision", claimId: claim.claim_id, priority: 114, prompt: `“${shorten(text)}”解决的是谁的什么问题？你如何定义流程、设计测试、收集反馈并决定下一步迭代？`, hint: "挖出需求判断、产品化思维和从想法到验证的能力。" });
       }
     });
     return candidates;
   }
 
-  function requirementQuestionCandidates() {
+  function hiddenJdCandidates() {
     return state.requirements.filter(req => req.weight >= 4 && ["gap", "weak"].includes(req.match_level)).map(req => ({
-      key: `jd-${req.requirement_id}`,
+      key: `hidden-jd-${req.requirement_id}`,
+      dimension: "岗位潜力",
       category: /英文|英语|Excel|SQL|工具/.test(req.original_text) ? "language_tool" : "jd_case",
       requirementId: req.requirement_id,
-      priority: 80 + req.weight,
-      prompt: `JD 高权重要求“${shorten(req.original_text, 54)}”。你是否有一个真实案例能证明？请写场景、个人动作、交付物和结果。`,
-      hint: "没有直接经验可以写可迁移案例，但必须说明市场、对象或工具差异。"
+      priority: 88 + req.weight,
+      prompt: `目标岗位重视“${shorten(req.original_text, 54)}”。回想你的课程、项目、实习或个人尝试，有没有一个原简历没写、但能证明这项能力的真实案例？`,
+      hint: "可以是小案例，重点写清你如何思考和解决问题；没有就跳过，不硬凑。"
     }));
+  }
+
+  function generalAbilityCandidates(roundIndex) {
+    if (roundIndex === 0) return [
+      { key: "hardest-general", dimension: "复杂问题", category: "complexity", priority: 112, prompt: "这段经历里最难、最复杂、最需要你动脑的一件事是什么？为什么难，你是怎样一步步拆解的？", hint: "不要挑工作量最大的一件事，挑最能体现判断和解决问题能力的一件事。" },
+      { key: "initiative-general", dimension: "主动性", category: "initiative", priority: 110, prompt: "有没有一件事不是别人明确交代，而是你自己发现问题、提出优化并推动发生的？当时你看到了什么信号？", hint: "这里经常能挖出自驱力、业务敏感度和改进意识。" },
+      { key: "beyond-execution-general", dimension: "判断与取舍", category: "decision", priority: 108, prompt: "在这段经历中，你做过哪些不只是“照着执行”的判断或取舍？为什么选择这个方案，而不是其他做法？", hint: "比较方案、约束和取舍，能把执行经历写出思考含量。" }
+    ];
+    if (roundIndex === 1) return [
+      { key: "method-general", dimension: "方法论", category: "method_decision", priority: 106, prompt: "挑一个你反复做过的任务：你后来有没有总结出一套更高效的方法、模板或检查清单？它比最初做法好在哪里？", hint: "挖出方法沉淀、学习速度和可复制性。" },
+      { key: "influence-general", dimension: "影响力", category: "influence", priority: 104, prompt: "有没有一次你没有正式决策权，却需要让同事、合作方或其他团队接受你的方案？你用了什么信息或方式推动？", hint: "挖出无权影响、沟通策略和推进结果。" },
+      { key: "learning-general", dimension: "快速学习", category: "learning", priority: 102, prompt: "为了完成这段经历中的任务，你最快补上的一项新知识或新工具是什么？你如何学、如何验证自己真的会用？", hint: "不要只写“学习能力强”，要找真实的学习—应用闭环。" }
+    ];
+    return [
+      { key: "impact-general", dimension: "业务影响", category: "impact", priority: 104, prompt: "如果没有漂亮的增长数字，这段经历还有哪些结果能证明价值：覆盖范围、采用情况、交付速度、错误减少、协作效率或用户反馈？", hint: "真实的定性结果也能形成有竞争力的简历 bullet。" },
+      { key: "asset-general", dimension: "可复用资产", category: "systemization", priority: 102, prompt: "这段经历最终留下了哪些别人可以继续使用的东西？例如 SOP、分析框架、模板、脚本、内容方法、项目机制或知识沉淀。", hint: "可复用资产能把一次性执行升级为体系化能力。" },
+      { key: "headline-general", dimension: "核心竞争力", category: "summary", priority: 100, prompt: "如果面试官只能记住这段经历的一点，你希望是哪项能力？请用一个具体事实证明，而不是只写能力词。", hint: "答案会成为简历中最值得保留的核心 bullet 候选。" }
+    ];
+  }
+
+  function finalAccuracyCandidate() {
+    const risky = state.claims.find(claim => claim.origin === "material" && (strongRole(claim.normalized_claim) || claim.claim_type === "metric_result"));
+    if (!risky) return [];
+    return [{
+      key: `accuracy-${risky.claim_id}`,
+      dimension: "准确性校对",
+      category: "accuracy_check",
+      claimId: risky.claim_id,
+      priority: 70,
+      prompt: `最后为了把亮点写得有分量又准确，请补充“${shorten(risky.normalized_claim)}”中你真正做出的关键贡献、数据来源或可确认范围。`,
+      hint: "这是最后的事实校对，不是本轮能力深挖的重点；不确定部分可以明确删掉或降级。"
+    }];
   }
 
   function shorten(text, max = 42) {
@@ -416,31 +483,51 @@
     return clean.length > max ? `${clean.slice(0, max)}…` : clean;
   }
 
+  function answerFollowupCandidates() {
+    const answers = state.rounds.flatMap(round => round.questions).map(question => question.answer || "").join("\n");
+    const candidates = [];
+    if (/数据|指标|分析|后台|转化|漏斗/.test(answers)) candidates.push({ key: "followup-insight", dimension: "分析到决策", category: "insight", priority: 130, prompt: "你刚才提到了数据或指标。请挑一个最关键的发现：它与原先判断有什么不同，你据此做了什么决策，后来怎样验证方向是对的？", hint: "把“会看数据”升级成“能用数据发现问题并推动决策”。" });
+    if (/沟通|协调|供应商|合作方|跨团队|同事/.test(answers)) candidates.push({ key: "followup-influence", dimension: "推动与影响", category: "influence", priority: 128, prompt: "你刚才提到多人协作。哪一次推进最能体现你的影响力？对方最初为什么不配合，你用了什么方法让事情继续向前？", hint: "补出阻力、策略和结果，而不是停留在“负责沟通”。" });
+    if (/SOP|流程|模板|清单|规范|标准|沉淀/.test(answers)) candidates.push({ key: "followup-system", dimension: "体系化", category: "systemization", priority: 126, prompt: "你刚才提到流程或沉淀。它解决了哪些重复问题？关键规则是谁提出的，后来被多少人或哪些场景持续使用？", hint: "把一次性交付挖成可复制的流程建设能力。" });
+    if (/用户|客户|受众|反馈|需求|达人|商家/.test(answers)) candidates.push({ key: "followup-user", dimension: "用户洞察", category: "insight", priority: 124, prompt: "你刚才提到了用户或需求。你怎样判断真实需求，而不是只接收表面反馈？有没有因此调整方案的例子？", hint: "补出洞察来源、判断逻辑和方案变化。" });
+    return candidates;
+  }
+
+  function pickDiverseQuestions(candidates, count) {
+    const sorted = [...candidates].sort((a, b) => b.priority - a.priority);
+    const picked = [];
+    const dimensions = new Set();
+    sorted.forEach(item => {
+      if (picked.length >= count || dimensions.has(item.dimension)) return;
+      picked.push(item);
+      dimensions.add(item.dimension);
+    });
+    sorted.forEach(item => {
+      if (picked.length >= count || picked.includes(item)) return;
+      picked.push(item);
+    });
+    return picked;
+  }
+
   function ensureRound(index) {
     if (state.rounds[index]) return;
     const asked = new Set(state.rounds.flatMap(round => round.questions.map(question => question.key)));
-    let candidates = [...claimQuestionCandidates(), ...requirementQuestionCandidates()].filter(item => !asked.has(item.key));
-    if (index >= 1) {
-      candidates.push(
-        { key: "method-general", category: "method_decision", priority: 70, prompt: "挑一项最重要的工作：你为什么采用这个方法？比较过哪些替代方案，取舍依据是什么？", hint: "不要只描述执行步骤，要说判断和取舍。" },
-        { key: "evidence-general", category: "resume_claim", priority: 69, prompt: "这段经历留下了哪些可以在面试中说明的证据：后台截图、SOP、文档、版本记录、作品或事实链？", hint: "不要上传隐私材料，只记录证据名称和所在位置。" }
-      );
-    }
-    if (index >= 2) {
-      candidates.push(
-        { key: "failure-general", category: "failure_reflection", priority: 68, prompt: "这段经历中最失败或最不确定的一次判断是什么？如果重做，你会调整哪个环节？", hint: "写真实复盘，不必把失败包装成成功。" },
-        { key: "scope-general", category: "behavioral", priority: 67, prompt: "遇到跨团队或合作方不配合时，你具体如何推进？请给一个有冲突、有动作、有结果的例子。", hint: "区分你推动的部分与他人最终拍板的部分。" }
-      );
-    }
-    candidates = candidates.filter(item => !asked.has(item.key)).sort((a, b) => b.priority - a.priority);
+    const experience = experienceOpportunityCandidates();
+    const jd = hiddenJdCandidates();
+    let candidates;
+    if (index === 0) candidates = [...experience, ...generalAbilityCandidates(0), ...jd];
+    else if (index === 1) candidates = [...answerFollowupCandidates(), ...generalAbilityCandidates(1), ...experience, ...jd];
+    else candidates = [...generalAbilityCandidates(2), ...answerFollowupCandidates(), ...finalAccuracyCandidate()];
+    candidates = candidates.filter(item => !asked.has(item.key));
     if (!candidates.length) {
       candidates = [
-        { key: `background-${index}`, category: "resume_claim", priority: 50, prompt: "这项工作为什么存在？服务对象是谁，不做会造成什么影响？", hint: "补充背景、对象和真实痛点。" },
-        { key: `deliverable-${index}`, category: "method_decision", priority: 49, prompt: "你具体留下了什么可复用交付物？它被谁、在什么场景中采用？", hint: "例如 SOP、分析表、脚本、流程、方案或内容资产。" },
-        { key: `result-${index}`, category: "resume_claim", priority: 48, prompt: "没有量化指标时，是否有覆盖范围、采用状态、效率变化或质量改善可以证明结果？", hint: "没有数字也不要编，可以写真实交付与采用。" }
+        { key: `background-${index}`, dimension: "业务理解", category: "context", priority: 50, prompt: "这项工作为什么存在？真正服务的对象是谁，对业务最重要的问题是什么？", hint: "补出业务背景，避免简历只剩任务清单。" },
+        { key: `decision-${index}`, dimension: "主动判断", category: "decision", priority: 49, prompt: "过程中哪一个判断最能体现你的思考，而不是照着执行？你当时有哪些约束和备选方案？", hint: "补出选择依据和解决问题能力。" },
+        { key: `result-${index}`, dimension: "实际影响", category: "impact", priority: 48, prompt: "除了数字，这项工作还带来了哪些真实变化：被采用、减少返工、缩短周期、提升协作或改善体验？", hint: "定性结果也可以有竞争力，但必须具体。" }
       ];
     }
-    state.rounds.push({ round: index + 1, questions: candidates.slice(0, 3).map((item, qIndex) => ({ ...item, id: `Q-${index + 1}-${qIndex + 1}`, answer: "", skipped: false })) });
+    const picked = pickDiverseQuestions(candidates, 3);
+    state.rounds.push({ round: index + 1, questions: picked.map((item, qIndex) => ({ ...item, id: `Q-${index + 1}-${qIndex + 1}`, answer: "", skipped: false })) });
   }
 
   function renderQuestions() {
@@ -449,8 +536,8 @@
     const banner = element("div", { className: "round-banner" });
     const copy = element("div");
     copy.append(element("strong", { text: `第 ${round.round} 轮 · ${round.questions.length} 个高价值问题` }));
-    copy.append(element("p", { text: "优先回答能明确个人边界、数据口径和高权重 JD 缺口的问题。" }));
-    banner.append(copy, element("span", { className: "chip", text: state.stopped ? "已停止追问" : "回答后生成下一轮" }));
+    copy.append(element("p", { text: "优先回忆具体案例，把原简历没写出的判断、方法、复杂度和影响补出来。" }));
+    banner.append(copy, element("span", { className: "chip", text: state.stopped ? "已停止深挖" : "回答会沉淀为新亮点" }));
     contentPanel.append(banner);
 
     round.questions.forEach((question, index) => {
@@ -458,10 +545,10 @@
       const head = element("div", { className: "question-head" });
       const title = element("div", { className: "question-title" });
       title.append(element("h3", { text: question.prompt }), element("p", { text: question.hint }));
-      head.append(element("span", { className: "question-number", text: String(index + 1) }), title, element("span", { className: "chip", text: question.category }));
+      head.append(element("span", { className: "question-number", text: String(index + 1) }), title, element("span", { className: "chip", text: question.dimension || question.category }));
       const answer = element("textarea", { className: "answer-box" });
       answer.value = question.answer || "";
-      answer.placeholder = "只写真实事实。不能确认可以明确写“无法确认 / 没有数据”。";
+      answer.placeholder = "尽量写一个具体场景：当时的问题、你的判断和动作、最后发生了什么。暂时想不到可以跳过。";
       answer.disabled = question.skipped;
       answer.addEventListener("input", () => { question.answer = answer.value; saveState(); });
       const tools = element("div", { className: "question-tools" });
@@ -470,8 +557,8 @@
       checkbox.type = "checkbox";
       checkbox.checked = !!question.skipped;
       checkbox.addEventListener("change", () => { question.skipped = checkbox.checked; answer.disabled = checkbox.checked; if (checkbox.checked) question.answer = ""; saveState(); });
-      skip.append(checkbox, document.createTextNode("无法确认，降级处理"));
-      tools.append(skip, element("span", { text: question.claimId || question.requirementId || "经历通用追问" }));
+      skip.append(checkbox, document.createTextNode("暂时想不到，跳过这一题"));
+      tools.append(skip, element("span", { text: question.claimId || question.requirementId || "能力挖掘题" }));
       card.append(head, answer, tools);
       contentPanel.append(card);
     });
@@ -479,14 +566,22 @@
     const actions = element("div", { className: "button-row" });
     actions.append(
       button("返回修改材料", "", () => navigate("intake")),
-      button("停止追问，按现有证据继续", "soft", stopQuestions),
-      button(state.currentRound >= 2 ? "完成拷打，确认事实台账" : "保存回答并生成下一轮", "primary", nextRound)
+      button("先停止深挖，按现有素材继续", "soft", stopQuestions),
+      button(state.currentRound >= 2 ? "完成深挖，整理亮点素材" : "保存回答并继续深挖", "primary", nextRound)
     );
     contentPanel.append(actions);
   }
 
   function negativeAnswer(text) {
     return /不知道|不清楚|没有数据|无法确认|记不清|没有证据/.test(text);
+  }
+
+  function hypotheticalAnswer(question, text) {
+    return ["jd_case", "language_tool"].includes(question.category) && /如果|假设|应该会|我会先|可能会/.test(text);
+  }
+
+  function normalizedAnswerKey(text) {
+    return String(text || "").replace(/\\s+/g, "").replace(/[，。；、,.!?！？：:]/g, "").toLowerCase();
   }
 
   function absorbRoundAnswers(round) {
@@ -501,12 +596,18 @@
       if (!answer) return;
       const linked = state.claims.find(claim => claim.claim_id === question.claimId);
       if (linked) {
-        linked.notes = [linked.notes, `访谈回答（${question.category}）：${answer}`].filter(Boolean).join("\n");
+        linked.notes = [linked.notes, `第 ${round.round} 轮「${question.dimension || question.category}」补充：${answer}`].filter(Boolean).join("\n");
         if (negativeAnswer(answer)) { linked.verification = "unknown"; linked.selected = false; }
         else if (linked.verification === "unknown") linked.verification = "user_attested";
-      } else if (!["jd_case", "language_tool"].includes(question.category) && !negativeAnswer(answer)) {
-        state.claims.push(createClaim(answer, state.claims.length, "user_attested"));
       }
+
+      if (negativeAnswer(answer) || hypotheticalAnswer(question, answer)) return;
+      const duplicate = state.claims.some(claim => normalizedAnswerKey(claim.normalized_claim) === normalizedAnswerKey(answer));
+      if (duplicate) return;
+      const discovered = createClaim(answer, state.claims.length, "user_attested", "interview");
+      discovered.notes = `由第 ${round.round} 轮「${question.dimension || question.category}」能力深挖补充；请改写为“行动＋方法＋结果”的简历表达。`;
+      discovered.selected = true;
+      state.claims.push(discovered);
     });
     round.absorbed = true;
   }
@@ -514,7 +615,7 @@
   function nextRound() {
     const round = state.rounds[state.currentRound];
     const completed = round.questions.some(question => question.skipped || String(question.answer || "").trim().length >= 4);
-    if (!completed) return showToast("请至少回答或降级处理一个问题", true);
+    if (!completed) return showToast("请至少回答或跳过一个问题", true);
     absorbRoundAnswers(round);
     refreshRequirementMatches();
     if (state.currentRound >= 2) {
@@ -537,19 +638,22 @@
   }
 
   function renderClaims() {
+    const discoveredCount = state.claims.filter(claim => claim.origin === "interview").length;
+    const materialCount = state.claims.length - discoveredCount;
     const intro = element("div", { className: "round-banner" });
     const copy = element("div");
-    copy.append(element("strong", { text: `${state.claims.length} 条原子 Claim 待确认` }));
-    copy.append(element("p", { text: "只有“材料明确支持”或“本人补充确认”的 Claim 才能进入正式简历。" }));
-    intro.append(copy, element("span", { className: "chip", text: "强词必须有角色边界" }));
+    copy.append(element("strong", { text: `原始素材 ${materialCount} 条 · 深挖新增 ${discoveredCount} 条` }));
+    copy.append(element("p", { text: "这里把回答沉淀成简历亮点素材。优先保留能证明判断、方法、推动和影响的内容，再做一次准确性校对。" }));
+    intro.append(copy, element("span", { className: "chip", text: "目标：发现原简历遗漏的竞争力" }));
     contentPanel.append(intro);
 
     state.claims.forEach((claim, index) => {
       const usable = ["source_grounded", "user_attested"].includes(claim.verification) && claim.selected;
-      const card = element("article", { className: `claim-card ${usable ? "is-usable" : "is-risky"}` });
+      const discovered = claim.origin === "interview";
+      const card = element("article", { className: `claim-card ${usable ? "is-usable" : "is-risky"} ${discovered ? "is-discovered" : ""}` });
       const headCopy = element("div");
-      headCopy.append(element("h3", { text: `${claim.claim_id} · ${usable ? "可进入简历候选池" : "待补证 / 不选用"}` }));
-      headCopy.append(element("p", { text: usable ? "仍需遵守角色、归因和时态边界" : "不会自动写入最终简历" }));
+      headCopy.append(element("h3", { text: `${claim.claim_id} · ${discovered ? "深挖新增亮点" : "原始材料事实"}` }));
+      headCopy.append(element("p", { text: usable ? (discovered ? "已进入候选池，可继续压缩为有竞争力的简历 bullet" : "已进入候选池，可与深挖答案组合改写") : "待确认后再纳入简历" }));
       const remove = element("button", { className: "compact-button danger", text: "删除", type: "button" });
       remove.addEventListener("click", () => {
         if (!window.confirm(`删除 ${claim.claim_id}？`)) return;
@@ -615,7 +719,9 @@
       checkbox.addEventListener("change", () => { claim.selected = checkbox.checked; saveState(); });
       selected.append(checkbox, document.createTextNode("纳入简历候选池"));
       const risks = element("div", { className: "risk-list" });
-      (claim.risk_flags.length ? claim.risk_flags : ["无自动风险标记"]).forEach(risk => risks.append(element("span", { className: "risk-chip", text: risk })));
+      const abilityTags = discovered ? concepts(claim.normalized_claim).slice(0, 4) : [];
+      abilityTags.forEach(tag => risks.append(element("span", { className: "ability-chip", text: tag })));
+      (claim.risk_flags.length ? claim.risk_flags : ["准确性校对通过"]).forEach(risk => risks.append(element("span", { className: "risk-chip", text: risk })));
       const notes = field("访谈补充 / 证据位置", claim.notes, value => { claim.notes = value; }, { multiline: true, placeholder: "例如：Shopify 后台截图、SOP 文档、周报；不要上传隐私文件。" });
       card.append(head, text, meta, selected, risks, notes);
       contentPanel.append(card);
@@ -624,8 +730,8 @@
     const actions = element("div", { className: "button-row" });
     actions.append(
       button("＋ 新增事实", "", addClaim),
-      button("返回继续追问", "soft", () => navigate("questions")),
-      button("确认事实，生成 JD 矩阵", "primary", () => { refreshRequirementMatches(); saveState(); navigate("matrix"); })
+      button("返回继续深挖", "soft", () => navigate("questions")),
+      button("确认亮点，生成 JD 矩阵", "primary", () => { refreshRequirementMatches(); saveState(); navigate("matrix"); })
     );
     contentPanel.append(actions);
   }
@@ -706,7 +812,7 @@
     const actions = element("div", { className: "button-row" });
     actions.append(
       button("重新自动匹配", "", () => { refreshRequirementMatches(); saveState(); render(); }),
-      button("返回事实台账", "soft", () => navigate("claims")),
+      button("返回亮点素材库", "soft", () => navigate("claims")),
       button("生成压力面试问题", "primary", () => { state.defense = generateDefense(); saveState(); navigate("defense"); })
     );
     contentPanel.append(actions);
@@ -991,6 +1097,7 @@
       jd: "负责跨境电商经营数据分析与核心指标拆解\n推动运营策略执行、跨团队协作和项目复盘\n熟练使用 Excel，能够使用英文作为工作语言\n有直播电商、行业研究或海外市场经验优先"
     };
     state.material = "负责海外独立站商品页面运营，分析访问与转化数据\n参与直播策划和口播脚本撰写，与团队完成单场线索获取\n协同多家外部合作方沟通需求，形成入驻流程 SOP 和内容审核 SOP\n搭建 AI 工具测试流程，目前处于小范围测试阶段";
+    state.sources = [{ name: "脱敏示例", method: "内置文本", characters: state.material.length }];
     state.claims = [];
     state.requirements = [];
     state.rounds = [];
@@ -1016,20 +1123,183 @@
     return lines.filter(Boolean).join("\n");
   }
 
-  async function importMaterial(file) {
+  function setImportStatus(message, progress = 0, isError = false) {
+    const box = document.getElementById("importStatus");
+    if (!box) return;
+    box.hidden = false;
+    box.classList.toggle("is-error", isError);
+    const label = box.querySelector(".import-status-text");
+    const bar = document.getElementById("importProgressBar");
+    if (label) label.textContent = message;
+    if (bar) bar.style.width = `${Math.max(0, Math.min(100, progress))}%`;
+  }
+
+  async function ensurePdfJs() {
+    if (!pdfJsPromise) {
+      pdfJsPromise = import(PDFJS_URL).then(module => {
+        module.GlobalWorkerOptions.workerSrc = PDFJS_WORKER_URL;
+        return module;
+      });
+    }
+    return pdfJsPromise;
+  }
+
+  function loadExternalScript(url) {
+    return new Promise((resolve, reject) => {
+      const existing = document.querySelector(`script[data-library-url="${url}"]`);
+      if (existing) {
+        if (window.Tesseract) resolve();
+        else existing.addEventListener("load", resolve, { once: true });
+        return;
+      }
+      const script = document.createElement("script");
+      script.src = url;
+      script.async = true;
+      script.dataset.libraryUrl = url;
+      script.addEventListener("load", resolve, { once: true });
+      script.addEventListener("error", () => reject(new Error("OCR 组件加载失败，请检查网络后重试")), { once: true });
+      document.head.append(script);
+    });
+  }
+
+  async function ensureTesseract() {
+    if (!tesseractPromise) {
+      tesseractPromise = loadExternalScript(TESSERACT_URL).then(() => {
+        if (!window.Tesseract) throw new Error("OCR 组件初始化失败");
+        return window.Tesseract;
+      });
+    }
+    return tesseractPromise;
+  }
+
+  function translateOcrStatus(status) {
+    const labels = {
+      "loading tesseract core": "加载 OCR 核心",
+      "initializing tesseract": "初始化 OCR",
+      "loading language traineddata": "下载中英文识别模型",
+      "initializing api": "准备识别引擎",
+      "recognizing text": "识别文字"
+    };
+    return labels[status] || status || "正在识别";
+  }
+
+  async function createOcrWorker(workerContext, totalFiles) {
+    const Tesseract = await ensureTesseract();
+    return Tesseract.createWorker(["chi_sim", "eng"], 1, {
+      logger: event => {
+        const within = Number(event.progress || 0);
+        const overall = ((workerContext.position + within) / totalFiles) * 100;
+        setImportStatus(`${translateOcrStatus(event.status)} · ${Math.round(within * 100)}%`, overall);
+      }
+    });
+  }
+
+  function textFromPdfItems(items) {
+    return items.map(item => `${item.str || ""}${item.hasEOL ? "\n" : " "}`).join("").replace(/[ \t]+\n/g, "\n").replace(/[ \t]{2,}/g, " ").trim();
+  }
+
+  async function renderPdfPage(page) {
+    const base = page.getViewport({ scale: 1 });
+    const scale = Math.min(2.4, 2200 / Math.max(1, base.width));
+    const viewport = page.getViewport({ scale });
+    const canvas = document.createElement("canvas");
+    canvas.width = Math.ceil(viewport.width);
+    canvas.height = Math.ceil(viewport.height);
+    const context = canvas.getContext("2d", { alpha: false });
+    context.fillStyle = "#fff";
+    context.fillRect(0, 0, canvas.width, canvas.height);
+    await page.render({ canvasContext: context, viewport }).promise;
+    return canvas;
+  }
+
+  async function extractPdf(file, workerContext, filePosition, totalFiles) {
+    const pdfjs = await ensurePdfJs();
+    setImportStatus(`解析 PDF：${file.name}`, (filePosition / totalFiles) * 100);
+    const pdf = await pdfjs.getDocument({
+      data: new Uint8Array(await file.arrayBuffer()),
+      cMapUrl: `${PDFJS_ASSET_ROOT}cmaps/`,
+      cMapPacked: true,
+      standardFontDataUrl: `${PDFJS_ASSET_ROOT}standard_fonts/`,
+      wasmUrl: `${PDFJS_ASSET_ROOT}wasm/`
+    }).promise;
+    if (pdf.numPages > MAX_PDF_PAGES) throw new Error(`PDF 共 ${pdf.numPages} 页，超过在线识别上限 ${MAX_PDF_PAGES} 页`);
+    const pages = [];
+    let ocrPages = 0;
+    for (let index = 1; index <= pdf.numPages; index += 1) {
+      setImportStatus(`读取 ${file.name} · 第 ${index}/${pdf.numPages} 页`, ((filePosition + (index - 1) / pdf.numPages) / totalFiles) * 100);
+      const page = await pdf.getPage(index);
+      const direct = textFromPdfItems((await page.getTextContent()).items || []);
+      if (direct.replace(/\s/g, "").length >= 30) {
+        pages.push(`【第 ${index} 页】\n${direct}`);
+      } else {
+        workerContext.position = filePosition;
+        if (!workerContext.worker) workerContext.worker = await createOcrWorker(workerContext, totalFiles);
+        const canvas = await renderPdfPage(page);
+        const result = await workerContext.worker.recognize(canvas);
+        pages.push(`【第 ${index} 页 · OCR】\n${String(result.data?.text || "").trim()}`);
+        ocrPages += 1;
+      }
+      page.cleanup();
+    }
+    return { text: pages.join("\n\n"), method: ocrPages ? `PDF文本+OCR（${ocrPages}/${pdf.numPages}页）` : `PDF文本提取（${pdf.numPages}页）` };
+  }
+
+  async function extractImage(file, workerContext, filePosition, totalFiles) {
+    workerContext.position = filePosition;
+    if (!workerContext.worker) workerContext.worker = await createOcrWorker(workerContext, totalFiles);
+    setImportStatus(`OCR 识别图片：${file.name}`, (filePosition / totalFiles) * 100);
+    const result = await workerContext.worker.recognize(file);
+    return { text: String(result.data?.text || "").trim(), method: "图片 OCR" };
+  }
+
+  async function extractFile(file, workerContext, filePosition, totalFiles) {
+    if (file.size > MAX_FILE_BYTES) throw new Error(`${file.name} 超过 20MB 上限`);
+    if (file.type === "application/pdf" || /\.pdf$/i.test(file.name)) return extractPdf(file, workerContext, filePosition, totalFiles);
+    if (file.type.startsWith("image/") || /\.(?:png|jpe?g|webp|bmp)$/i.test(file.name)) return extractImage(file, workerContext, filePosition, totalFiles);
+    const raw = await file.text();
+    if (file.type === "application/json" || /\.json$/i.test(file.name)) {
+      const parsed = JSON.parse(raw);
+      return { text: textFromResumeJson(parsed) || raw, method: "结构化 JSON" };
+    }
+    return { text: raw, method: "文本读取" };
+  }
+
+  async function importMaterials(files) {
+    const list = [...files].slice(0, 10);
+    if (!list.length || importBusy) return;
+    importBusy = true;
+    const workerContext = { worker: null, position: 0 };
+    const extracted = [];
+    const errors = [];
     try {
-      const text = await file.text();
-      if (/\.json$/i.test(file.name)) {
-        const parsed = JSON.parse(text);
-        state.material = textFromResumeJson(parsed) || text;
-      } else state.material = text;
-      saveState();
-      render();
-      showToast("材料已导入");
-    } catch (error) {
-      showToast(error.message || "导入失败", true);
+      for (let index = 0; index < list.length; index += 1) {
+        const file = list[index];
+        try {
+          const result = await extractFile(file, workerContext, index, list.length);
+          if (!result.text.replace(/\s/g, "")) throw new Error(`${file.name} 未识别出文字`);
+          extracted.push({ file, ...result });
+        } catch (error) {
+          errors.push(error.message || `${file.name} 读取失败`);
+        }
+      }
     } finally {
+      if (workerContext.worker) await workerContext.worker.terminate();
+      importBusy = false;
       materialFile.value = "";
+    }
+    extracted.forEach(item => {
+      const block = `【来源：${item.file.name}｜${item.method}】\n${item.text.trim()}`;
+      state.material = [state.material.trim(), block].filter(Boolean).join("\n\n");
+      state.sources.push({ name: item.file.name, method: item.method, characters: item.text.trim().length });
+    });
+    saveState();
+    render();
+    if (errors.length) {
+      setImportStatus(`已完成 ${extracted.length} 个文件；${errors.join("；")}`, extracted.length ? 100 : 0, true);
+      showToast(`部分文件未完成：${errors[0]}`, true);
+    } else {
+      setImportStatus(`已识别 ${extracted.length} 个文件，请先校对文本再开始拷打`, 100);
+      showToast("材料识别完成，请先校对文本");
     }
   }
 
@@ -1046,7 +1316,7 @@
     render();
     showToast("本地记录已清除");
   });
-  materialFile.addEventListener("change", () => { if (materialFile.files[0]) importMaterial(materialFile.files[0]); });
+  materialFile.addEventListener("change", () => { if (materialFile.files.length) importMaterials(materialFile.files); });
 
   render();
 })();

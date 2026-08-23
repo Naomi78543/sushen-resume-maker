@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="ByteDance">
+  <rect width="64" height="64" rx="12" fill="#fff"/>
+  <path d="M10 18h9v28h-9zm17 7h9v21h-9zm17-12h9v33h-9z" fill="#111"/>
+  <path d="M10 51h43" stroke="#4a71f2" stroke-width="4" stroke-linecap="round"/>
+</svg>

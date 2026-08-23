@@ -1,0 +1,140 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="description" content="上传完整简历，识别经历与候选人定位，重构为酥神风格的一页 A4 简历。">
+  <title>一键酥神化｜Resume Rebuilder</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <span class="brand-mark" aria-hidden="true">酥</span>
+      <div><h1>酥神简历工作台</h1><p>AI Resume Rebuilder · 整份简历重构</p></div>
+    </div>
+    <nav class="product-nav" aria-label="工作台功能">
+      <a href="../interrogation/">深度拷打</a>
+      <a class="is-active" href="./">一键酥神化</a>
+      <a href="../editor/">简历编辑器</a>
+    </nav>
+    <div class="privacy-badge"><span class="privacy-dot"></span>浏览器本地解析 · 不上传文件</div>
+  </header>
+
+  <main class="shell">
+    <section class="hero">
+      <div>
+        <span class="eyebrow">RESUME REBUILDER</span>
+        <h2>不是逐句润色，而是重构整份简历</h2>
+        <p>识别完整经历与求职定位，围绕项目背景、真实职责、关键动作和结果证明重新组织内容，直接生成可编辑的一页 A4 酥神简历。</p>
+      </div>
+      <div class="flow" aria-label="产品流程">
+        <span>上传原简历</span><i>→</i><span>识别完整经历</span><i>→</i><span>分析候选人定位</span><i>→</i><span>整份简历重构</span><i>→</i><span>A4 / 编辑 / PDF</span>
+      </div>
+    </section>
+
+    <section class="stage" aria-labelledby="uploadTitle">
+      <header class="stage-head">
+        <div><span class="step-no">01</span><div><span class="eyebrow">SOURCE RESUME</span><h2 id="uploadTitle">上传原始完整简历</h2></div></div>
+        <span id="fileStatus" class="status">等待文件</span>
+      </header>
+      <div id="dropzone" class="dropzone" tabindex="0" role="button" aria-label="选择 PDF 或 DOCX 简历">
+        <span class="upload-symbol" aria-hidden="true">↑</span>
+        <strong>选择 PDF / DOCX 文件</strong>
+        <span>PDF / DOCX 将在浏览器本地解析；扫描版 PDF 暂不支持</span>
+        <input id="fileInput" type="file" accept=".pdf,.docx,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document" hidden>
+      </div>
+      <div id="selectedFile" class="file-row hidden" aria-live="polite">
+        <span class="file-type">RESUME</span>
+        <div><strong id="fileName"></strong><small id="fileMeta"></small></div>
+        <button id="replaceButton" class="text-button" type="button">重新选择</button>
+      </div>
+    </section>
+
+    <section id="recognitionSection" class="stage hidden" aria-labelledby="recognitionTitle">
+      <header class="stage-head">
+        <div><span class="step-no">02</span><div><span class="eyebrow">RESUME RECOGNITION</span><h2 id="recognitionTitle">简历识别与候选人定位</h2></div></div>
+        <span id="recognitionStatus" class="status safe">等待解析</span>
+      </header>
+
+      <div class="recognition-layout">
+        <div>
+          <h3>已识别完整结构</h3>
+          <div id="recognitionStats" class="stats"></div>
+          <div id="recognizedSections" class="recognized-sections"></div>
+        </div>
+        <aside class="positioning">
+          <span class="eyebrow">PERSONAL POSITIONING</span>
+          <h3 id="positioningTitle"></h3>
+          <p id="positioningStory"></p>
+          <h4>核心能力</h4>
+          <div id="positioningTags" class="tag-list"></div>
+          <h4>差异化竞争力</h4>
+          <p id="positioningEdge"></p>
+        </aside>
+      </div>
+
+      <div class="metric-tip">
+        <strong>量化结果处理规则</strong>
+        <span>只保留原简历已有数据；缺失位置生成“建议补充”提示，不自动编造 GMV、CTR、CVR 或效率提升。</span>
+      </div>
+      <div class="button-row">
+        <button id="startButton" class="button primary" type="button">开始酥神化</button>
+      </div>
+    </section>
+
+    <section id="loadingSection" class="stage hidden" aria-live="polite">
+      <header class="stage-head">
+        <div><span class="step-no">03</span><div><span class="eyebrow">TRANSFORMATION</span><h2>正在重构整份简历</h2></div></div>
+        <span id="loadingProgress" class="status">0 / 7</span>
+      </header>
+      <ol id="loadingSteps" class="loading-steps">
+        <li>正在识别经历结构...</li>
+        <li>正在分析候选人定位...</li>
+        <li>正在提炼真实贡献...</li>
+        <li>正在重构项目背景...</li>
+        <li>正在强化业务表达...</li>
+        <li>正在识别量化结果...</li>
+        <li>正在生成一页 A4 简历...</li>
+      </ol>
+    </section>
+
+    <section id="resultSection" class="result hidden" aria-labelledby="resultTitle">
+      <header class="result-head">
+        <div><span class="eyebrow">FULL RESUME COMPARISON</span><h2 id="resultTitle">原始完整简历 VS 酥神化一页简历</h2><p>Before 来自只读 sourceResume；After 仅重组同一批事实，事实校验通过后才允许进入编辑器。</p></div>
+        <span class="status safe">A4 · 210 × 297 mm</span>
+      </header>
+
+      <div class="a4-compare">
+        <article>
+          <div class="paper-label"><span>BEFORE</span><strong>原始完整简历</strong></div>
+          <div class="a4-frame"><iframe id="beforeFrame" title="原始完整简历 A4 预览" sandbox="allow-same-origin allow-scripts"></iframe></div>
+        </article>
+        <article>
+          <div class="paper-label after"><span>AFTER</span><strong>酥神化一页简历</strong></div>
+          <div class="a4-frame highlighted"><iframe id="afterFrame" title="酥神化一页简历 A4 预览" sandbox="allow-same-origin allow-scripts"></iframe></div>
+        </article>
+      </div>
+
+      <section class="change-log" aria-labelledby="changeLogTitle">
+        <div class="change-head"><span class="eyebrow">SECTION-BY-SECTION</span><h3 id="changeLogTitle">逐段重构说明</h3></div>
+        <div class="change-table" role="table" aria-label="逐段重构对比">
+          <div class="change-row heading" role="row"><span>原始内容</span><span>重构方式</span><span>变化标签</span></div>
+          <div class="change-row" role="row"><span>原始事实</span><span>仅在背景、职责、动作和结果栏目之间重新归类，不改写原始实体与数字。</span><span><b>同源重组</b></span></div>
+          <div class="change-row" role="row"><span>公司 / 学校 / 岗位 / 项目</span><span>全部继承 sourceResume，任何新增实体都会触发异常并阻止输出。</span><span><b>实体校验</b></span></div>
+          <div class="change-row" role="row"><span>时间 / 数字 / 指标</span><span>只能复用原文；原文缺失时保留 missingMetrics 建议，不补造百分比。</span><span><b>数字校验</b></span></div>
+          <div class="change-row" role="row"><span>原始简历与优化稿</span><span>sourceResume 只读保存，optimizedResume 单独进入现有编辑器。</span><span><b>双数据源</b></span></div>
+        </div>
+      </section>
+
+      <div class="result-actions">
+        <div><strong id="resultPositioning"></strong><span>当前结果已写入现有 Resume JSON，可由原编辑器继续修改和导出 PDF。</span></div>
+        <button id="editorButton" class="button primary" type="button">进入简历编辑器继续修改</button>
+      </div>
+    </section>
+  </main>
+
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+  <script src="app.js" defer></script>
+</body>
+</html>

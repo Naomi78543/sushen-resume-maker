@@ -28,7 +28,7 @@
     {
       "id": 5,
       "prompt": "基于我的简历和目标 JD 做深度拷打，生成 ASU 风格简历，并告诉我面试官最可能追问什么。",
-      "expected_output": "先建立并校验 Claim Ledger 与 JD Matrix，再用冻结的 ASU 模板生成 HTML/PDF；随后对强角色词、指标、证据缺口和高权重 JD 缺口生成主问题、压力追问、面试官意图、回答骨架、证据准备与安全边界，不编造标准答案。",
+      "expected_output": "先从真实经历中识别被低估的能力线索，围绕复杂问题、判断、方法、推动和结果每轮追问 1–3 题，把回答沉淀为新增 Claim；再校验 Claim Ledger 与 JD Matrix，用冻结的 ASU 模板生成 HTML/PDF，并生成可追溯的面试防御问题，不把 Owner 与边界审计作为深挖主流程。",
       "files": []
     },
     {

@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Tesla">
+  <rect width="64" height="64" rx="12" fill="#fff"/>
+  <path d="M13 15h38l-4 8H36v28h-8V23H17z" fill="#e82127"/>
+  <path d="M21 27c6-3 16-3 22 0" fill="none" stroke="#e82127" stroke-width="3" stroke-linecap="round"/>
+</svg>

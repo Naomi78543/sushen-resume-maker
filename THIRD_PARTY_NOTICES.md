@@ -2,6 +2,14 @@
 
 This project builds on ideas and template conventions from the following MIT-licensed projects. Their original copyright notices are preserved below.
 
+The browser-based document import feature also loads the following libraries from a public CDN:
+
+- PDF.js / pdfjs-dist 6.1.200 (Apache-2.0) — https://github.com/mozilla/pdf.js
+- Tesseract.js 7.0.0 and matching OCR runtime (Apache-2.0) — https://github.com/naptha/tesseract.js
+- Mammoth.js 1.10.0 (BSD-2-Clause) — https://github.com/mwilliamson/mammoth.js
+
+Their source code and license terms are available in the linked repositories. Candidate files are processed in the browser and are not sent to this project's server.
+
 ## Claycui828/ASu-resume-skills
 
 Source: https://github.com/Claycui828/ASu-resume-skills

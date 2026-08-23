@@ -304,6 +304,7 @@
     project.background ||= [];
     project.impact ||= [];
     project.responsibilities ||= [];
+    project.actions ||= [];
     project.keywords ||= [];
     const block = element("div", { className: "project-card" });
     const head = element("div", { className: "card-head" });
@@ -315,6 +316,7 @@
       bulletEditor("背景", project.background),
       bulletEditor("指标与效果", project.impact),
       bulletEditor("我的职责", project.responsibilities),
+      bulletEditor("关键动作 / 方法", project.actions),
       field("技术关键词（用逗号分隔）", project.keywords.join(", "), value => {
         project.keywords = value.split(/[,，]/).map(x => x.trim()).filter(Boolean);
       })
@@ -346,7 +348,7 @@
         })
       );
       exp.projects.forEach((project, projectIndex) => block.append(projectEditor(project, exp.projects, projectIndex)));
-      block.append(addButton("项目", () => exp.projects.push({ name: "", subtitle: "", background: [], impact: [], responsibilities: [], keywords: [] })));
+      block.append(addButton("项目", () => exp.projects.push({ name: "", subtitle: "", background: [], impact: [], responsibilities: [], actions: [], keywords: [] })));
       editorPanel.append(block);
     });
     editorPanel.append(addButton("实习 / 工作经历", () => data.experience.push({ company: "", team: "", dates: "", brand: "gray", tags: [], projects: [] })));
@@ -618,10 +620,22 @@
       templateHtml = await templateResponse.text();
       sampleData = await sampleResponse.json();
       if (!templateHtml.includes("__RESUME_JSON__")) throw new Error("ASU 模板缺少数据占位符");
+      let navigationHandoff = null;
+      if (/[?&]from=transform(?:&|$)/.test(window.location.search) && window.name) {
+        try {
+          const envelope = JSON.parse(window.name);
+          if (envelope && envelope.type === "sushen-resume-editor-handoff-v1") navigationHandoff = envelope.resume;
+        } catch (_) { navigationHandoff = null; }
+        if (navigationHandoff) window.name = "";
+      }
       const stored = localStorage.getItem(STORAGE_KEY);
       try { handoff = JSON.parse(localStorage.getItem(HANDOFF_KEY)); }
       catch (_) { handoff = null; }
-      if (stored) {
+      if (navigationHandoff) {
+        validateImportedData(navigationHandoff);
+        data = normalizeData(navigationHandoff);
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+      } else if (stored) {
         try { data = normalizeData(JSON.parse(stored)); }
         catch (_) { data = normalizeData(sampleData); }
       } else data = normalizeData(sampleData);
