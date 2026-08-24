@@ -473,11 +473,11 @@
             title.append(el('span', 'project-title', project.name));
             if (project.subtitle) title.append(el('span', 'project-subtitle', `— ${project.subtitle}`));
             block.append(title);
-            const projectHighlights = project.keywords || [];
-            if ((project.background || []).length) block.append(factBlock('背景与目标', project.background, projectHighlights));
+            if ((project.background || []).length) block.append(factBlock('背景：', project.background));
             const responsibilityItems = [...(project.responsibilities || []), ...(project.actions || [])];
-            if (responsibilityItems.length) block.append(factBlock('我的职责', responsibilityItems, projectHighlights));
-            if ((project.impact || []).length) block.append(factBlock('数据与指标', project.impact, projectHighlights));
+            if ((project.impact || []).length) block.append(factBlock('指标与效果：', project.impact));
+            if (responsibilityItems.length) block.append(factBlock('我的职责：', responsibilityItems));
+            if ((project.keywords || []).length) block.append(factBlock('技术关键词：', el('div', 'keywords', project.keywords.join(' / '))));
             wrap.append(block);
           });
           s.append(wrap);

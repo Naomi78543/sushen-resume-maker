@@ -457,14 +457,14 @@
       head,
       field("项目名称", project.name, value => { project.name = value; }),
       field("副标题", project.subtitle, value => { project.subtitle = value; }),
-      bulletEditor("背景与目标", project.background),
+      bulletEditor("背景", project.background),
+      bulletEditor("指标与效果", project.impact),
       bulletEditor("我的职责", project.responsibilities),
       bulletEditor("关键动作 / 方法（A4 中合并到“我的职责”）", project.actions),
-      bulletEditor("数据与指标", project.impact),
       field("待补数据提示（仅编辑器可见）", project.missingMetrics.join("\n"), value => {
         project.missingMetrics = value.split(/\n/).map(item => item.trim()).filter(Boolean);
       }, { multiline: true }),
-      field("技术关键词（用逗号分隔）", project.keywords.join(", "), value => {
+      field("技术关键词（正式简历单独成行，用逗号分隔）", project.keywords.join(", "), value => {
         project.keywords = value.split(/[,，]/).map(x => x.trim()).filter(Boolean);
       })
     );

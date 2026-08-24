@@ -186,6 +186,28 @@ button,input { font: inherit; }
 .metric-tip { display: flex; gap: 12px; margin-top: 14px; padding: 10px 12px; border-left: 4px solid var(--clay); color: #745548; background: #fff4ef; font-size: 12px; }
 .metric-tip strong { white-space: nowrap; }
 
+.project-review-list { display: grid; gap: 14px; margin-top: 16px; }
+.project-review-company { border: 1px solid var(--line); background: #fff; }
+.project-review-company > header { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 10px 12px; border-left: 4px solid var(--blue); color: var(--blue); background: #eef4f7; }
+.project-review-company > header strong { font: 800 16px Georgia,"Songti SC",serif; }
+.project-review-company > header span { color: var(--muted); font-size: 11px; }
+.project-groups { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 10px; padding: 12px; border-bottom: 1px solid var(--line); }
+.project-group-card { display: grid; gap: 7px; padding: 10px; border: 1px solid #ccd7dc; background: #f8fafb; }
+.project-group-card label,.project-fact-row label,.standalone-row label { display: grid; gap: 4px; color: var(--muted); font-size: 10px; }
+.project-group-card input,.project-fact-row select,.standalone-row select { width: 100%; min-width: 0; padding: 7px 8px; border: 1px solid #bdc9cf; border-radius: 4px; color: var(--ink); background: #fff; font: inherit; }
+.project-group-actions { display: flex; justify-content: flex-end; }
+.project-group-actions button { padding: 4px 7px; border: 0; color: var(--danger); background: transparent; cursor: pointer; font-size: 10px; }
+.project-facts { display: grid; gap: 0; padding: 0 12px 12px; }
+.project-fact-row { display: grid; grid-template-columns: minmax(0,1fr) 210px; gap: 12px; align-items: start; padding: 9px 0; border-bottom: 1px dotted var(--line); }
+.project-fact-row:last-child { border-bottom: 0; }
+.project-fact-row p { margin: 0; color: var(--ink); font-size: 12px; line-height: 1.55; }
+.standalone-projects { padding: 12px; border-top: 1px solid var(--line); background: #faf9f5; }
+.standalone-projects h3 { margin: 0 0 8px; color: var(--blue); font: 750 15px Georgia,"Songti SC",serif; }
+.standalone-row { display: grid; grid-template-columns: minmax(0,1fr) 240px; gap: 12px; align-items: center; padding: 8px 0; border-bottom: 1px dotted var(--line); }
+.standalone-row:last-child { border-bottom: 0; }
+.standalone-row strong { font-size: 12px; }
+.project-review-note { margin: 8px 12px 12px; color: var(--muted); font-size: 10px; }
+
 .button-row { display: flex; justify-content: flex-end; gap: 9px; margin-top: 14px; }
 .button { padding: 10px 15px; border: 1px solid #c8c6be; border-radius: 7px; color: var(--blue); background: #fff; font-weight: 750; cursor: pointer; }
 .button.primary { border-color: var(--blue); color: #fff; background: var(--blue); }
@@ -252,6 +274,8 @@ button,input { font: inherit; }
   .privacy-badge { display: none; }
   .product-nav { grid-column: 1/3; justify-content: center; }
   .recognition-layout { grid-template-columns: 1fr; }
+  .project-groups { grid-template-columns: 1fr; }
+  .project-fact-row,.standalone-row { grid-template-columns: 1fr; }
   .photo-review-layout { grid-template-columns: 1fr; }
   .stats { grid-template-columns: 1fr 1fr; }
   .stats div:nth-child(2) { border-right: 0; }

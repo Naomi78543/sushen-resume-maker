@@ -83,6 +83,33 @@ def validate_data(data: dict, errors: list[str]) -> None:
             for link_index, item in enumerate(links):
                 if item.get("verification") not in {"source_grounded", "user_attested"}:
                     add(errors, f"experience[{index}].links[{link_index}] 缺少有效证据状态")
+        for project_index, project in enumerate(exp.get("projects", [])):
+            path = f"experience[{index}].projects[{project_index}]"
+            if not project.get("name"):
+                add(errors, f"{path}.name 缺失")
+            if project.get("generated_label") and not project.get("label_source_claim_ids"):
+                add(errors, f"{path} 的生成项目标签缺少 label_source_claim_ids")
+            if project.get("subtitle") and project.get("role_scope_verification") not in {
+                "source_grounded", "user_attested"
+            }:
+                add(errors, f"{path}.subtitle 缺少角色边界证据状态")
+            visible_facts: list[str] = []
+            for field in ("background", "impact", "responsibilities", "actions"):
+                values = project.get(field, [])
+                if not isinstance(values, list):
+                    add(errors, f"{path}.{field} 必须为数组")
+                    continue
+                for fact_index, fact in enumerate(values):
+                    text = str(fact.get("text", "") if isinstance(fact, dict) else fact).strip()
+                    if not text:
+                        add(errors, f"{path}.{field}[{fact_index}] 为空")
+                    elif text in visible_facts:
+                        add(errors, f"{path} 重复使用同一事实：{text[:45]}")
+                    else:
+                        visible_facts.append(text)
+            keywords = project.get("keywords", [])
+            if not isinstance(keywords, list):
+                add(errors, f"{path}.keywords 必须为数组")
 
     serialized = json.dumps(data, ensure_ascii=False)
     if re.search(r"(?<!\d)1[3-9]\d{9}(?!\d)", serialized):

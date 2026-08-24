@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="description" content="上传完整简历，识别经历与候选人定位，重构为酥神风格的一页 A4 简历。">
   <title>一键酥神化｜Resume Rebuilder</title>
-  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="styles.css?v=20260824-project-groups-2">
 </head>
 <body>
   <header class="topbar">
@@ -129,13 +129,30 @@
         <span>只保留原简历已有数据；缺失位置生成“建议补充”提示，不自动编造 GMV、CTR、CVR 或效率提升。</span>
       </div>
       <div class="button-row">
-        <button id="startButton" class="button primary" type="button">开始酥神化</button>
+        <button id="openProjectReviewButton" class="button primary" type="button">确认项目拆分</button>
+      </div>
+    </section>
+
+    <section id="projectReviewSection" class="stage hidden" aria-labelledby="projectReviewTitle">
+      <header class="stage-head">
+        <div><span class="step-no">04</span><div><span class="eyebrow">PROJECT GROUPING</span><h2 id="projectReviewTitle">确认实习中的项目边界</h2></div></div>
+        <span id="projectReviewStatus" class="status">等待确认</span>
+      </header>
+      <p class="review-intro">系统只提供基于原文的候选分组。请修改项目名称，并确认每条原始经历属于哪个项目；独立项目也可以由你选择并入某段实习。系统不会自动写入 Owner。</p>
+      <div id="projectReviewList" class="project-review-list"></div>
+      <label class="confirm-row">
+        <input id="confirmProjectGrouping" type="checkbox">
+        <span>我已确认项目边界、项目名称和角色范围；所有分组仍来自原始简历事实。</span>
+      </label>
+      <div class="button-row">
+        <button id="confirmProjectGroupingButton" class="button" type="button" disabled>锁定项目结构</button>
+        <button id="startButton" class="button primary" type="button" disabled>开始酥神化</button>
       </div>
     </section>
 
     <section id="loadingSection" class="stage hidden" aria-live="polite">
       <header class="stage-head">
-        <div><span class="step-no">04</span><div><span class="eyebrow">TRANSFORMATION</span><h2>正在重构整份简历</h2></div></div>
+        <div><span class="step-no">05</span><div><span class="eyebrow">TRANSFORMATION</span><h2>正在重构整份简历</h2></div></div>
         <span id="loadingProgress" class="status">0 / 7</span>
       </header>
       <ol id="loadingSteps" class="loading-steps">
@@ -170,7 +187,7 @@
         <div class="change-head"><span class="eyebrow">SECTION-BY-SECTION</span><h3 id="changeLogTitle">逐段重构说明</h3></div>
         <div class="change-table" role="table" aria-label="逐段重构对比">
           <div class="change-row heading" role="row"><span>原始内容</span><span>重构方式</span><span>变化标签</span></div>
-          <div class="change-row" role="row"><span>原始事实</span><span>只重组为“背景与目标、我的职责、数据与指标”；关键动作合并进入职责，不改写原始实体与数字。</span><span><b>三段结构</b></span></div>
+          <div class="change-row" role="row"><span>原始事实</span><span>先按业务项目分组，再重组为“背景、指标与效果、我的职责、技术关键词”；不按逗号拆成残句。</span><span><b>项目级重构</b></span></div>
           <div class="change-row" role="row"><span>公司 / 学校 / 岗位 / 项目</span><span>全部继承 sourceResume，任何新增实体都会触发异常并阻止输出。</span><span><b>实体校验</b></span></div>
           <div class="change-row" role="row"><span>时间 / 数字 / 指标</span><span>只能复用原文；原文缺失时保留 missingMetrics 建议，不补造百分比。</span><span><b>数字校验</b></span></div>
           <div class="change-row" role="row"><span>原始简历与优化稿</span><span>sourceResume 只读保存，optimizedResume 单独进入现有编辑器。</span><span><b>双数据源</b></span></div>
@@ -186,7 +203,7 @@
   </main>
 
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
-  <script src="app.js" defer></script>
+  <script src="app.js?v=20260824-project-groups-2" defer></script>
 </body>
 </html>
 

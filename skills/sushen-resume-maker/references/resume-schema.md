@@ -135,7 +135,9 @@
 
 `actions` 用于承载可由原始材料直接支持的关键动作与方法，例如分析、拆解、设计、搭建、推动和复盘；不得为了补齐区块而推断原文没有的方法。`background`、`impact`、`responsibilities` 与 `actions` 均使用上文的可见条目对象，并保留同一来源映射。
 
-A4 经历区只显示三个区块：`background` 映射为“背景与目标”，`responsibilities + actions` 合并为“我的职责”，`impact` 映射为“数据与指标”。`missingMetrics` 只在编辑器中提示，不进入正式简历。
+A4 经历区按项目显示四层：`background` 映射为“背景”，`impact` 映射为“指标与效果”，`responsibilities + actions` 合并为“我的职责”，`keywords` 映射为独立的“技术关键词”行。`missingMetrics` 只在编辑器中提示，不进入正式简历。
+
+解析后必须先建立项目分组。系统可以生成项目结构标签，但标签必须记录 `generated_label: true` 和 `label_source_claim_ids`；每条来源事实只能归入一个确认后的项目，且不得按逗号、顿号或分号拆成失去语义的碎片。
 
 `links` 显示在公司名称或岗位旁，只能来自原始简历或用户补充。兼容读取旧的单个 `link` 字段，但编辑器保存时统一迁移为 `links[]`；禁止自动生成 URL。
 

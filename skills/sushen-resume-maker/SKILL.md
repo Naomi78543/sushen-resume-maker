@@ -70,7 +70,9 @@ python scripts/validate_jd_matrix.py path/to/jd-matrix.json --ledger path/to/cla
 完整读取 [references/resume-schema.md](references/resume-schema.md) 和 [references/style-guide.md](references/style-guide.md)，生成 `resume-data.json`。
 
 - 每个可见 bullet 必须有 `verification`、`source_note`，并增加 `claim_ids` 以便反推面试问题。
-- A4 实习经历固定只显示“背景与目标 / 我的职责 / 数据与指标”三个区块：`background` 映射背景与目标，`responsibilities + actions` 合并为我的职责，`impact` 映射数据与指标；`missingMetrics` 仅在编辑器提示，不进入正式简历。
+- 先按公司识别真实项目边界，并让用户确认每条原始事实属于哪个项目；不得用逗号或分号把一句原始事实机械切成碎片。
+- A4 中每个项目固定显示“背景 / 指标与效果 / 我的职责 / 技术关键词”四层：`background` 映射背景，`impact` 映射指标与效果，`responsibilities + actions` 合并为我的职责，`keywords` 独立成行；`missingMetrics` 仅在编辑器提示，不进入正式简历。
+- 项目名称可以是基于原文事实生成的结构标签，但必须保存 `generated_label: true` 与 `label_source_claim_ids`；公司、岗位、时间、数字和用户角色不得由结构标签推断或升级。
 - 可见内容的 `highlights[]` 只标记原文中真实存在的数字、方法、成果和交付物；作品链接只能来自原材料或用户补充。
 - 照片必须由用户从提取候选中确认或单独上传；外部认可必须写明证据来源。没有外部证据时，只能展示明确标为候选人定位的同源总结，不得伪装成他人评价。
 - 运营岗位的“技术关键词”应写真实平台、指标体系、分析方法、协作机制与 SOP，不得为了密度虚构算法或工程术语。

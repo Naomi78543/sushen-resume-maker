@@ -28,6 +28,7 @@ REQUIRED_TEXT = {
         "解析原文（可直接修正错字、断行和乱码）",
         "确认原文并识别结构",
         "照片候选与裁剪",
+        "确认实习中的项目边界",
     ),
     "editor/app.js": (
         "自动识别重点词",
@@ -36,9 +37,10 @@ REQUIRED_TEXT = {
     ),
     "skills/sushen-resume-maker/assets/resume_template.html": (
         "实习 / 工作经历",
-        "背景与目标",
-        "我的职责",
-        "数据与指标",
+        "背景：",
+        "指标与效果：",
+        "我的职责：",
+        "技术关键词：",
         "专业评价 / 外部认可",
     ),
 }
@@ -46,7 +48,8 @@ REQUIRED_TEXT = {
 FORBIDDEN_TEXT = {
     "skills/sushen-resume-maker/assets/resume_template.html": (
         "关键动作 / 方法：",
-        "指标与效果：",
+        "背景与目标",
+        "数据与指标",
     ),
 }
 

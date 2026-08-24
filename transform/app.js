@@ -48,6 +48,8 @@
   let importBusy = false;
   let photoCandidates = [];
   let selectedPhoto = null;
+  let projectGroupingDraft = null;
+  let projectGroupingConfirmed = false;
   let toastTimer = 0;
 
   function clone(value) {
@@ -75,6 +77,185 @@
   function detectHighlights(text) {
     const values = String(text || "").match(/\d+(?:\.\d+)?(?:%|\+|万\+?|亿|次|家|人|个|天|月|年|小时|分钟|项|条|份|元|万元|美元|单|场)?|GMV|CTR|CVR|SQL|AI Agent|SOP|A\/B Test(?:ing)?|Python|Excel|Prompt Engineering/gi) || [];
     return [...new Set(values.map(item => item.trim()).filter(Boolean))];
+  }
+
+  function projectKeywords(facts) {
+    const text = (facts || []).map(item => item.text || item).join(" ");
+    const values = [...toolMatches(text)];
+    const tokens = text.match(/TikTok(?: Live| Shop)?|Shopify|Google Analytics|PCU|ACU|PV|UV|CTR|CVR|GMV|GPM|GPH|DM|WhatsApp|MVP|SOP|A\/B(?:测试| Test(?:ing)?)?|Prompt(?: Engineering)?|AI Agent|Coze Agent|AIGC|用户画像|内容复盘|标题测试|私域转化|内容生产流程/gi) || [];
+    tokens.forEach(token => {
+      const value = token.trim();
+      if (!values.some(item => item.toLowerCase() === value.toLowerCase())) values.push(value);
+    });
+    (facts || []).forEach(item => {
+      const label = String(item.text || item).match(/^([^：:]{3,18})[：:]/);
+      if (label && !values.includes(label[1])) values.push(label[1]);
+    });
+    return values.slice(0, 12);
+  }
+
+  function experienceFacts(exp) {
+    return (exp.projects || []).flatMap(project => ["background", "impact", "responsibilities", "actions"].flatMap(key => project[key] || []));
+  }
+
+  function suggestedProjectName(facts, exp) {
+    const text = (facts || []).map(item => item.text || item).join(" ");
+    if (/AI|AIGC|Agent|数字人|Prompt|Coze/i.test(text)) return /数字人/.test(text) ? "AI 数字人直播与内容生产探索" : "AI 工具应用与内容生产提效";
+    if (/Shopify|独立站/i.test(text)) return "Shopify 独立站转化与履约链路优化";
+    if (/直播|TikTok|PCU|ACU|DM|留资/i.test(text)) return "直播增长链路与数据监测闭环";
+    if (/小红书|私域|内容增长|用户画像/i.test(text)) return "内容增长与用户运营闭环";
+    const label = text.match(/^([^：:]{3,22})[：:]/);
+    return label ? label[1] : (exp.team || exp.company || "业务项目");
+  }
+
+  function initializeProjectGrouping(source) {
+    return {
+      experiences: (source.experience || []).map((exp, expIndex) => {
+        const facts = experienceFacts(exp).map((fact, index) => ({
+          fact: clone(fact),
+          id: fact.claim_ids && fact.claim_ids[0] || `EXP-${expIndex}-${index}`,
+          groupId: ""
+        }));
+        const aiFacts = facts.filter(item => /AI|AIGC|Agent|数字人|Prompt|Coze/i.test(item.fact.text || ""));
+        const coreFacts = facts.filter(item => !aiFacts.includes(item));
+        const splitAi = aiFacts.length > 0 && coreFacts.length >= 2;
+        const groups = [];
+        const addGroup = (groupFacts, suffix) => {
+          const id = `EXP-${expIndex}-GROUP-${groups.length + 1}`;
+          groups.push({ id, name: suggestedProjectName(groupFacts.map(item => item.fact), exp), roleScope: "", userConfirmed: false });
+          groupFacts.forEach(item => { item.groupId = id; });
+        };
+        if (splitAi) {
+          addGroup(coreFacts, "core");
+          addGroup(aiFacts, "ai");
+        } else addGroup(facts, "all");
+        return { expIndex, company: exp.company, team: exp.team, facts, groups };
+      }),
+      standalone: (source.projects || []).map((project, projectIndex) => ({ projectIndex, name: project.name, targetExperienceIndex: "standalone" }))
+    };
+  }
+
+  function markProjectGroupingDirty() {
+    projectGroupingConfirmed = false;
+    $("confirmProjectGrouping").checked = false;
+    $("confirmProjectGroupingButton").disabled = true;
+    $("startButton").disabled = true;
+    $("projectReviewStatus").textContent = "有修改，待确认";
+    $("projectReviewStatus").className = "status";
+    optimizedResume = null;
+    $("resultSection").classList.add("hidden");
+  }
+
+  function projectReviewElement(tag, className, text) {
+    const node = document.createElement(tag);
+    if (className) node.className = className;
+    if (text !== undefined) node.textContent = text;
+    return node;
+  }
+
+  function renderProjectReview() {
+    const root = $("projectReviewList");
+    root.replaceChildren();
+    (projectGroupingDraft.experiences || []).forEach(draft => {
+      const company = projectReviewElement("section", "project-review-company");
+      const header = projectReviewElement("header");
+      header.append(projectReviewElement("strong", "", draft.company || "未识别公司"), projectReviewElement("span", "", draft.team || ""));
+      company.append(header);
+      const groups = projectReviewElement("div", "project-groups");
+      draft.groups.forEach((group, groupIndex) => {
+        const card = projectReviewElement("div", "project-group-card");
+        const nameLabel = projectReviewElement("label", "", "项目名称");
+        const nameInput = projectReviewElement("input");
+        nameInput.value = group.name;
+        nameInput.addEventListener("input", () => { group.name = nameInput.value; markProjectGroupingDirty(); });
+        nameLabel.append(nameInput);
+        const scopeLabel = projectReviewElement("label", "", "角色范围（仅在真实且可回答时填写，例如：模块 Owner）");
+        const scopeInput = projectReviewElement("input");
+        scopeInput.value = group.roleScope;
+        scopeInput.placeholder = "留空则不展示 Owner / 主导";
+        scopeInput.addEventListener("input", () => { group.roleScope = scopeInput.value; markProjectGroupingDirty(); });
+        scopeLabel.append(scopeInput);
+        card.append(nameLabel, scopeLabel);
+        if (draft.groups.length > 1) {
+          const actions = projectReviewElement("div", "project-group-actions");
+          const remove = projectReviewElement("button", "", "删除此分组");
+          remove.type = "button";
+          remove.addEventListener("click", () => {
+            const fallback = draft.groups.find(item => item.id !== group.id);
+            draft.facts.filter(item => item.groupId === group.id).forEach(item => { item.groupId = fallback.id; });
+            draft.groups.splice(groupIndex, 1);
+            markProjectGroupingDirty();
+            renderProjectReview();
+          });
+          actions.append(remove); card.append(actions);
+        }
+        groups.append(card);
+      });
+      const addGroup = projectReviewElement("button", "button", "＋ 新建项目分组");
+      addGroup.type = "button";
+      addGroup.addEventListener("click", () => {
+        draft.groups.push({ id: `EXP-${draft.expIndex}-GROUP-${Date.now()}`, name: "新项目", roleScope: "", userConfirmed: false });
+        markProjectGroupingDirty(); renderProjectReview();
+      });
+      groups.append(addGroup); company.append(groups);
+      const facts = projectReviewElement("div", "project-facts");
+      draft.facts.forEach(item => {
+        const row = projectReviewElement("div", "project-fact-row");
+        row.append(projectReviewElement("p", "", item.fact.text || ""));
+        const label = projectReviewElement("label", "", "归属项目");
+        const select = projectReviewElement("select");
+        draft.groups.forEach(group => {
+          const option = projectReviewElement("option", "", group.name || "未命名项目");
+          option.value = group.id; option.selected = item.groupId === group.id; select.append(option);
+        });
+        select.addEventListener("change", () => { item.groupId = select.value; markProjectGroupingDirty(); });
+        label.append(select); row.append(label); facts.append(row);
+      });
+      company.append(facts, projectReviewElement("p", "project-review-note", "每条原始事实只归入一个项目，避免职责、指标重复出现。"));
+      root.append(company);
+    });
+    if ((projectGroupingDraft.standalone || []).length) {
+      const standalone = projectReviewElement("section", "standalone-projects");
+      standalone.append(projectReviewElement("h3", "", "独立项目归属"));
+      projectGroupingDraft.standalone.forEach(item => {
+        const row = projectReviewElement("div", "standalone-row");
+        row.append(projectReviewElement("strong", "", item.name || "未命名项目"));
+        const label = projectReviewElement("label", "", "保留独立项目，或并入实习公司");
+        const select = projectReviewElement("select");
+        const keep = projectReviewElement("option", "", "保留在“技术项目与沉淀”");
+        keep.value = "standalone"; select.append(keep);
+        projectGroupingDraft.experiences.forEach(exp => {
+          const option = projectReviewElement("option", "", `并入 ${exp.company}`);
+          option.value = String(exp.expIndex); select.append(option);
+        });
+        select.value = String(item.targetExperienceIndex);
+        select.addEventListener("change", () => { item.targetExperienceIndex = select.value; markProjectGroupingDirty(); });
+        label.append(select); row.append(label); standalone.append(row);
+      });
+      root.append(standalone);
+    }
+  }
+
+  function openProjectReview() {
+    if (!sourceResume) return showToast("请先确认原始简历", true);
+    if (!projectGroupingDraft) projectGroupingDraft = initializeProjectGrouping(sourceResume);
+    renderProjectReview();
+    $("projectReviewSection").classList.remove("hidden");
+    $("projectReviewSection").scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+
+  function confirmProjectGrouping() {
+    if (!$("confirmProjectGrouping").checked) return showToast("请先勾选项目边界确认", true);
+    const invalid = projectGroupingDraft.experiences.some(exp =>
+      exp.groups.some(group => !cleanLine(group.name)) || exp.facts.some(fact => !exp.groups.some(group => group.id === fact.groupId))
+    );
+    if (invalid) return showToast("存在空项目名称或未归属的原始经历", true);
+    projectGroupingDraft.experiences.forEach(exp => exp.groups.forEach(group => { group.userConfirmed = true; }));
+    projectGroupingConfirmed = true;
+    $("projectReviewStatus").textContent = "项目结构已确认";
+    $("projectReviewStatus").className = "status safe";
+    $("startButton").disabled = false;
+    showToast("项目边界已锁定，可以开始酥神化");
   }
 
   function showToast(message, error) {
@@ -523,10 +704,30 @@
     return found;
   }
 
+  function mergeWrappedFactLines(lines, boundaryTest) {
+    const merged = [];
+    (lines || []).forEach(line => {
+      const text = stripBullet(line);
+      if (!text) return;
+      const currentBoundary = boundaryTest(text);
+      const previous = merged[merged.length - 1];
+      const previousBoundary = previous ? boundaryTest(previous) : false;
+      const labeledFact = /^[^：:]{2,24}[：:]/.test(text);
+      const previousComplete = previous ? /[。！？!?；;]$/.test(previous) : true;
+      if (!previous || currentBoundary || previousBoundary || labeledFact || previousComplete) merged.push(text);
+      else {
+        const connector = /[\u4e00-\u9fff]$/.test(previous) && /^[A-Za-z0-9]/.test(text) ? " " : "";
+        merged[merged.length - 1] = cleanLine(previous + connector + text);
+      }
+    });
+    return merged;
+  }
+
   function parseExperiences(lines, fileName, counter) {
     const entries = [];
     let current = null;
-    lines.forEach(line => {
+    const semanticLines = mergeWrappedFactLines(lines, text => Boolean(parseExperienceHeader(text)));
+    semanticLines.forEach(line => {
       const header = parseExperienceHeader(line);
       if (header && (header.dates || ROLE_PATTERN.test(header.role) || COMPANY_PATTERN.test(header.company))) {
         if (current) entries.push(current);
@@ -585,9 +786,10 @@
   function parseProjects(lines, fileName, counter) {
     const projects = [];
     let current = null;
-    lines.forEach((line, index) => {
+    const semanticLines = mergeWrappedFactLines(lines, text => looksLikeProjectHeader(text, "") || (Boolean(dateFromLine(text)) && withoutDate(text).length === 0));
+    semanticLines.forEach((line, index) => {
       const text = stripBullet(line);
-      const next = lines[index + 1] || "";
+      const next = semanticLines[index + 1] || "";
       const dateOnly = Boolean(dateFromLine(text)) && withoutDate(text).length === 0;
       if (dateOnly && current && !current.dates) current.dates = dateFromLine(text);
       else if (looksLikeProjectHeader(text, next)) {
@@ -757,39 +959,59 @@
   }
 
   function atomicFacts(facts) {
-    const output = [];
-    (facts || []).forEach(item => {
+    return (facts || []).map(item => {
       const source = typeof item === "string" ? { text: item } : item;
       const text = cleanLine(source.text || "");
-      if (!text) return;
-      let parts = text.split(/[；;。]+/).map(cleanLine).filter(Boolean);
-      if (parts.length === 1 && text.length > 42) {
-        const commaParts = text.split(/[，,]+/).map(cleanLine).filter(part => part.length >= 6);
-        if (commaParts.length > 1) parts = commaParts;
-      }
-      parts.forEach(part => output.push(Object.assign({}, clone(source), {
-        text: part,
-        raw_text: source.raw_text || text,
-        highlights: detectHighlights(part)
-      })));
-    });
-    return output;
+      return text ? Object.assign({}, clone(source), { text, raw_text: source.raw_text || text, highlights: detectHighlights(text) }) : null;
+    }).filter(Boolean);
   }
 
   function classifyFacts(facts) {
     const result = { background: [], impact: [], responsibilities: [], actions: [] };
     atomicFacts(facts).forEach(item => {
       const text = item.text || "";
-      if (/^(?:项目)?(?:背景|目标|问题|痛点|需求)|^(?:面向|围绕|针对|为了解决)|业务(?:背景|场景)/i.test(text)) result.background.push(item);
-      else if (metricsInText(text).length || /提升|增长|降低|缩短|节省|实现|达到|累计|覆盖|上线|沉淀|形成|完成|产出|交付|落地/i.test(text)) result.impact.push(item);
-      else if (/负责|主导|牵头|协助|参与|承接|Owner|责任|职责/i.test(text)) result.responsibilities.push(item);
-      else if (/通过|基于|使用|采用|设计|搭建|构建|分析|制定|优化|推动|拆解|调研|复盘|迭代|协调|输出|整理|维护|运营|开发|测试/i.test(text)) result.actions.push(item);
+      const hasOutcome = /(?:由|从).{0,18}(?:提升|增长|降低|缩短)(?:至|到)?\s*\d|(?:提升|增长|降低|缩短)(?:至|到|约|为)\s*\d|(?:累计|最高|覆盖).{0,18}\d|上线|沉淀|形成|完成|产出|交付|落地/i.test(text);
+      const hasHardOutcome = hasOutcome && (metricsInText(text).length > 0 || /上线|交付|覆盖|沉淀|形成|产出|落地/i.test(text));
+      const hasMetricSystem = /指标体系|数据监控|监测口径|数据漏斗|转化漏斗|持续跟踪|追踪.{0,30}(?:率|指标)|PV|UV|CTR|CVR|GMV|GPM|GPH|PCU|ACU/i.test(text);
+      const metricResultLabel = /^(?:指标(?:体系)?(?:搭建|监控|闭环)?|数据(?:与指标|监控|分析|闭环)?|结果|效果)[：:]/i.test(text);
+      const hasContext = /^(?:项目)?(?:背景|目标|问题|痛点|需求)|^(?:面向|围绕|针对|为了解决)|业务(?:背景|场景)|定位.{0,24}(?:问题|需求)|探索.{0,20}(?:模式|方案|路径)/i.test(text);
+      if (hasContext && !hasHardOutcome) result.background.push(item);
+      else if (hasHardOutcome || (metricResultLabel && hasMetricSystem)) result.impact.push(item);
+      else if (/负责|主导|牵头|协助|参与|承接|Owner|责任|职责|通过|基于|使用|采用|设计|搭建|构建|分析|制定|优化|推动|拆解|调研|复盘|迭代|协调|输出|整理|维护|运营|开发|测试/i.test(text)) result.responsibilities.push(item);
       else result.responsibilities.push(item);
     });
+    if (!result.background.length && result.responsibilities.length > 1) result.background.push(result.responsibilities.shift());
     return result;
   }
 
-  function buildOptimizedResume(source) {
+  function groupedProject(group, facts) {
+    const classified = classifyFacts(facts);
+    return Object.assign({
+      name: cleanLine(group.name),
+      subtitle: cleanLine(group.roleScope),
+      generated_label: true,
+      label_source_claim_ids: facts.flatMap(item => item.claim_ids || []),
+      role_scope_verification: group.roleScope ? "user_attested" : "",
+      keywords: projectKeywords(facts),
+      missingMetrics: metricsInText(facts.map(item => item.text || item).join(" ")).length ? [] : ["建议补充：项目规模 / 效率提升 / 用户数 / GMV / CTR / CVR 等真实结果数据"]
+    }, classified);
+  }
+
+  function standaloneAsExperienceProject(project) {
+    const facts = clone(project.bullets || []);
+    const classified = classifyFacts(facts);
+    return Object.assign({
+      name: project.name,
+      subtitle: project.role || "",
+      generated_label: false,
+      label_source_claim_ids: facts.flatMap(item => item.claim_ids || []),
+      role_scope_verification: "source_grounded",
+      keywords: projectKeywords(facts),
+      missingMetrics: clone(project.missingMetrics || [])
+    }, classified);
+  }
+
+  function buildOptimizedResume(source, grouping) {
     const optimized = clone(source);
     const positioning = buildPositioning(source);
     optimized.data_role = "optimizedResume";
@@ -812,16 +1034,36 @@
         highlights: detectHighlights(summaryText)
       } : null;
     }
-    optimized.experience = (source.experience || []).map(exp => {
+    optimized.experience = (source.experience || []).map((exp, expIndex) => {
       const copied = clone(exp);
-      copied.projects = (exp.projects || []).map(project => {
-        const allFacts = ["background", "impact", "responsibilities", "actions"].flatMap(key => project[key] || []);
-        return Object.assign({}, clone(project), classifyFacts(allFacts), { missingMetrics: clone(project.missingMetrics || []) });
-      });
+      const draft = grouping.experiences.find(item => item.expIndex === expIndex);
+      copied.projects = draft.groups.map(group => groupedProject(group, draft.facts.filter(item => item.groupId === group.id).map(item => item.fact)));
       return copied;
     });
+    const movedProjects = new Set();
+    (grouping.standalone || []).forEach(item => {
+      if (item.targetExperienceIndex === "standalone") return;
+      const targetIndex = Number(item.targetExperienceIndex);
+      const project = source.projects[item.projectIndex];
+      if (!project || !optimized.experience[targetIndex]) return;
+      const converted = standaloneAsExperienceProject(project);
+      const aiProject = /AI|Agent|数字人|AIGC/i.test(converted.name + " " + visibleProjectText(converted));
+      const mergeIndex = aiProject ? optimized.experience[targetIndex].projects.findIndex(candidate => /AI|Agent|数字人|AIGC/i.test(candidate.name + " " + visibleProjectText(candidate))) : -1;
+      if (mergeIndex >= 0) {
+        const existing = optimized.experience[targetIndex].projects[mergeIndex];
+        const allFacts = ["background", "impact", "responsibilities", "actions"].flatMap(key => [...(existing[key] || []), ...(converted[key] || [])]);
+        const merged = groupedProject({ name: converted.name || existing.name, roleScope: existing.subtitle || converted.subtitle || "" }, allFacts);
+        optimized.experience[targetIndex].projects[mergeIndex] = merged;
+      } else optimized.experience[targetIndex].projects.push(converted);
+      movedProjects.add(item.projectIndex);
+    });
+    optimized.projects = (source.projects || []).filter((_, index) => !movedProjects.has(index)).map(clone);
     optimized.fact_validation = null;
     return optimized;
+  }
+
+  function visibleProjectText(project) {
+    return ["background", "impact", "responsibilities", "actions"].flatMap(key => project[key] || []).map(item => item.text || item).join(" ");
   }
 
   function entityValues(data, type) {
@@ -835,7 +1077,7 @@
       ...(data.awards || []).map(item => item.date)
     ].filter(Boolean);
     if (type === "project") return [
-      ...(data.experience || []).flatMap(item => (item.projects || []).map(project => project.name)),
+      ...(data.experience || []).flatMap(item => (item.projects || []).filter(project => !project.generated_label).map(project => project.name)),
       ...(data.projects || []).map(item => item.name)
     ].filter(Boolean);
     return [];
@@ -1044,9 +1286,12 @@
     sourceConfirmed = false;
     photoCandidates = [];
     selectedPhoto = null;
+    projectGroupingDraft = null;
+    projectGroupingConfirmed = false;
     localStorage.removeItem(SOURCE_STORAGE_KEY);
     $("reviewSection").classList.add("hidden");
     $("recognitionSection").classList.add("hidden");
+    $("projectReviewSection").classList.add("hidden");
     $("loadingSection").classList.add("hidden");
     $("resultSection").classList.add("hidden");
   }
@@ -1056,7 +1301,15 @@
     renderRecognizedSections(sourceResume);
     renderPositioning(buildPositioning(sourceResume));
     $("recognitionStatus").textContent = "真实文件解析完成";
+    projectGroupingDraft = initializeProjectGrouping(sourceResume);
+    projectGroupingConfirmed = false;
+    $("confirmProjectGrouping").checked = false;
+    $("confirmProjectGroupingButton").disabled = true;
+    $("startButton").disabled = true;
+    $("projectReviewStatus").textContent = "等待确认";
+    $("projectReviewStatus").className = "status";
     $("recognitionSection").classList.remove("hidden");
+    $("projectReviewSection").classList.add("hidden");
     $("loadingSection").classList.add("hidden");
     $("resultSection").classList.add("hidden");
     $("recognitionSection").scrollIntoView({ behavior: "smooth", block: "start" });
@@ -1137,11 +1390,12 @@
 
   async function startTransform() {
     if (!selectedFile || !sourceResume || !sourceConfirmed) return showToast("请先校对并确认原始简历文字", true);
+    if (!projectGroupingConfirmed || !projectGroupingDraft) return showToast("请先确认项目边界", true);
     if (!templateHtml) return showToast("A4 模板尚未加载，请通过本地服务器或 GitHub Pages 打开", true);
     $("startButton").disabled = true;
     try {
       await runLoadingSteps();
-      const candidate = buildOptimizedResume(sourceResume);
+      const candidate = buildOptimizedResume(sourceResume, projectGroupingDraft);
       const validation = validateFacts(sourceResume, candidate);
       candidate.fact_validation = validation;
       if (!validation.valid) {
@@ -1195,10 +1449,13 @@
       sourceConfirmed = false;
       sourceResume = null;
       optimizedResume = null;
+      projectGroupingDraft = null;
+      projectGroupingConfirmed = false;
       localStorage.removeItem(SOURCE_STORAGE_KEY);
       $("confirmSource").checked = false;
       $("confirmSourceButton").disabled = true;
       $("recognitionSection").classList.add("hidden");
+      $("projectReviewSection").classList.add("hidden");
       $("resultSection").classList.add("hidden");
       renderQualityReport(analyzeTextQuality($("sourceText").value), extractionMethod + " · 已编辑未确认");
     });
@@ -1206,6 +1463,11 @@
       $("confirmSourceButton").disabled = !$("confirmSource").checked;
     });
     $("confirmSourceButton").addEventListener("click", confirmReviewedSource);
+    $("openProjectReviewButton").addEventListener("click", openProjectReview);
+    $("confirmProjectGrouping").addEventListener("change", () => {
+      $("confirmProjectGroupingButton").disabled = !$("confirmProjectGrouping").checked;
+    });
+    $("confirmProjectGroupingButton").addEventListener("click", confirmProjectGrouping);
     $("uploadPhotoButton").addEventListener("click", () => $("photoInput").click());
     $("photoInput").addEventListener("change", async () => {
       try {

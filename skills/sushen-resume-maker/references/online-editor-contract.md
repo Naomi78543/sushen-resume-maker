@@ -40,7 +40,9 @@ Owner、责任边界和数字归因不得成为连续追问主题。只有当某
 
 - 顶层结构遵循 [resume-schema.md](resume-schema.md)。
 - 可见 bullet 保留 `verification`、`source_note` 与 `claim_ids`。
-- A4 实习经历只显示三个区块：`background` 为背景与目标，`responsibilities + actions` 合并为我的职责，`impact` 为数据与指标；`missingMetrics` 仅作编辑器提示。
+- 一键酥神化必须先让用户确认公司内的项目拆分以及每条来源事实的归属，再生成优化稿。
+- A4 实习经历按项目显示四层：`background` 为背景，`impact` 为指标与效果，`responsibilities + actions` 合并为我的职责，`keywords` 独立成行；`missingMetrics` 仅作编辑器提示。
+- 原始 bullet 保持完整语义，不得按逗号或分号机械切分；编辑器可调整分组和表达，但不得改变来源事实。
 - `highlights[]` 只允许引用对应文本中真实存在的片段，由模板通过安全文本节点和 `<strong>` 节点渲染。
 - `experience.links[]`、`profile.photo` 与 `endorsements[]` 必须保留来源和验证状态；未确认照片、无来源链接和无证据外部认可不得进入正式简历。
 - 在线编辑器允许修改可见文本与排序，但不能自动判断新内容是否真实。
