@@ -629,7 +629,8 @@
   function parseEducation(lines, fileName, counter) {
     const entries = [];
     let current = null;
-    lines.forEach(line => {
+    const semanticLines = mergeWrappedFactLines(lines, text => /大学|学院|University|College|Institute|School/i.test(text) && Boolean(dateFromLine(text) || text.match(DEGREE_PATTERN)));
+    semanticLines.forEach(line => {
       const clean = stripBullet(line);
       const date = dateFromLine(clean);
       const degreeMatch = clean.match(DEGREE_PATTERN);
@@ -882,7 +883,7 @@
       awards,
       endorsements: awards.slice(0, 3).map((award, index) => ({
         text: award.name,
-        source: `原始简历·荣誉奖项${award.date ? `（${award.date}）` : ""}`,
+        source: `原始简历${award.date ? `（${award.date}）` : ""}`,
         verification: "source_grounded",
         source_note: file.name,
         claim_ids: [`SOURCE-ENDORSEMENT-${String(index + 1).padStart(2, "0")}`],
@@ -1022,7 +1023,7 @@
       coreCapabilities: positioning.capabilities,
       rule: "只重组 sourceResume 已有原文；不创建新的公司、学校、岗位、项目、时间、数字或业务指标"
     };
-    if (!(optimized.endorsements || []).length) {
+    if (!(optimized.profile && optimized.profile.summary && optimized.profile.summary.text)) {
       const role = (source.experience || []).map(item => item.team).find(Boolean) || source.profile.headline;
       const capabilities = (source.skills || []).slice(0, 3);
       const summaryText = [role ? `${role}方向候选人` : "", capabilities.length ? `具备${capabilities.join("、")}等已确认能力` : ""].filter(Boolean).join("，");

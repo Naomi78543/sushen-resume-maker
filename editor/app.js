@@ -378,10 +378,10 @@
 
   function renderEndorsementEditor() {
     const title = element("div", { className: "subsection-title" });
-    title.append(element("span", { text: "专业评价 / 外部认可（最多展示 3 条）" }));
+    title.append(element("span", { text: "奖项与事实背书（最多展示 3 条）" }));
     editorPanel.append(title);
     data.endorsements.forEach((item, index) => {
-      const block = card(item.text || `外部认可 ${index + 1}`, data.endorsements, index, "green");
+      const block = card(item.text || `事实背书 ${index + 1}`, data.endorsements, index, "green");
       block.append(
         field("认可内容", item.text, value => { item.text = value; }, { multiline: true }),
         field("证据来源", item.source, value => { item.source = value; }, { placeholder: "奖项、导师评价、客户反馈或正式证明" }),
@@ -392,7 +392,7 @@
       );
       editorPanel.append(block);
     });
-    editorPanel.append(addButton("外部认可", () => data.endorsements.push({ text: "", source: "", verification: "user_attested", source_note: "在线编辑器补充", claim_ids: [], highlights: [] })));
+    editorPanel.append(addButton("奖项或事实背书", () => data.endorsements.push({ text: "", source: "", verification: "user_attested", source_note: "在线编辑器补充", claim_ids: [], highlights: [] })));
   }
 
   function renderProfile() {

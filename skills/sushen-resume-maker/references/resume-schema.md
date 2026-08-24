@@ -35,7 +35,7 @@
 
 `highlights` 只能引用 `text` 中真实存在的连续词组。模板用安全文本节点和 `<strong>` 渲染，不解析用户提供的 HTML；数字、GMV、CTR、CVR、SQL、AI Agent、SOP 等可自动识别，编辑器允许人工增删。
 
-## 基本信息、照片与外部认可
+## 基本信息、照片、奖项与事实背书
 
 ```json
 {
@@ -60,7 +60,7 @@
       "text": "获得校级一等奖学金",
       "source": "获奖证书 / 原始简历",
       "verification": "source_grounded",
-      "source_note": "原始简历·荣誉奖项",
+      "source_note": "原始简历",
       "claim_ids": ["C-010"],
       "highlights": ["一等奖学金"]
     }
@@ -70,7 +70,7 @@
 
 - 从 PDF / DOCX 提取的图片只能作为候选，必须由用户选择后才能设为 `confirmed: true`；未确认或无法识别时隐藏照片。
 - 照片只允许 PNG、JPEG 或 WebP 数据 URL；`crop` 控制水平位置、垂直位置和 1–2 倍缩放。
-- `endorsements` 只接受 `source_grounded` 或 `user_attested`，并必须包含具体 `source`。没有外部认可证据时使用 `profile.summary` 展示事实型候选人定位，不能伪装成第三方评价。
+- `endorsements` 只接受 `source_grounded` 或 `user_attested`，并必须包含具体 `source`。没有奖项或事实背书证据时使用 `profile.summary` 展示事实型人设，不能伪装成第三方评价。
 
 `verification` 可取：
 

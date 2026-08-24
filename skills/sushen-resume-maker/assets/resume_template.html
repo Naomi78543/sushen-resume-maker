@@ -105,16 +105,12 @@
     .contact-label { color: var(--gray-500); margin-right: 1mm; }
 
     .professional-summary {
-      display: grid;
-      grid-template-columns: 27mm minmax(0,1fr);
-      gap: 2mm;
       margin-top: 3.2mm;
       padding: 2.2mm 3mm;
       border-left: 3px solid var(--olive);
       background: linear-gradient(90deg, var(--green-bar), rgba(234,241,229,.18));
       break-inside: avoid;
     }
-    .professional-summary-label { color: var(--ink-blue); font-weight: 850; }
     .professional-summary-body { color: var(--gray-700); }
     .professional-summary-body p { margin: 0 0 .8mm; }
     .professional-summary-body p:last-child { margin-bottom: 0; }
@@ -433,19 +429,17 @@
       const positioningSummary = p.summary && p.summary.text && allowedVerification(p.summary.verification) ? p.summary : null;
       if (verifiedEndorsements.length || positioningSummary) {
         const summary = el('section', 'professional-summary');
-        summary.append(el('div', 'professional-summary-label', verifiedEndorsements.length ? '专业评价 / 外部认可' : '候选人定位'));
         const body = el('div', 'professional-summary-body');
-        if (verifiedEndorsements.length) verifiedEndorsements.forEach(item => {
-          const paragraph = el('p', '');
-          paragraph.append(richText(item));
-          if (item.source) paragraph.append(document.createTextNode(`（${item.source}）`));
-          body.append(paragraph);
-        });
-        else {
-          const paragraph = el('p', '');
+        if (positioningSummary) {
+          const paragraph = el('p', 'positioning-line');
           paragraph.append(richText(positioningSummary));
           body.append(paragraph);
         }
+        verifiedEndorsements.forEach(item => {
+          const paragraph = el('p', '');
+          paragraph.append(richText(item));
+          body.append(paragraph);
+        });
         summary.append(body);
         root.append(summary);
       }
@@ -506,12 +500,14 @@
       renderCards('开源贡献', data.open_source, true);
       renderCards('技术项目与沉淀', data.projects, false);
 
-      if ((data.awards || []).length || (data.skills || []).length) {
+      const endorsedAwardNames = new Set(verifiedEndorsements.map(item => String(item.text || '').trim()).filter(Boolean));
+      const remainingAwards = (data.awards || []).filter(item => !endorsedAwardNames.has(String(item.name || '').trim()));
+      if (remainingAwards.length || (data.skills || []).length) {
         const s = section('奖项与技能');
         const grid = el('div', 'compact-grid');
-        if ((data.awards || []).length) {
+        if (remainingAwards.length) {
           const col = el('div', 'compact-item');
-          data.awards.forEach(item => {
+          remainingAwards.forEach(item => {
             const row = el('div', 'award-line');
             row.append(el('span', '', item.name), el('span', 'dates', item.date || ''));
             col.append(row);
