@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="description" content="在浏览器本地完成经历深挖、Claim Ledger、JD Matrix 与面试防御。">
   <title>酥神简历深度拷打台</title>
-  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="styles.css?v=20260825-evidence-pipeline">
 </head>
 <body>
   <header class="topbar">
@@ -35,11 +35,11 @@
         <p>每轮只问 1–3 个高价值问题，重点挖出原简历没写出来的能力与成果。</p>
       </div>
       <ol id="stepList" class="step-list">
-        <li><button type="button" data-step="intake"><span>01</span><b>材料与 JD</b><small>粘贴真实经历</small></button></li>
-        <li><button type="button" data-step="questions"><span>02</span><b>能力深挖</b><small>判断、方法、推动、结果</small></button></li>
-        <li><button type="button" data-step="claims"><span>03</span><b>亮点素材库</b><small>原始事实＋新挖亮点</small></button></li>
-        <li><button type="button" data-step="matrix"><span>04</span><b>JD 矩阵</b><small>找强项与缺口</small></button></li>
-        <li><button type="button" data-step="defense"><span>05</span><b>面试防御</b><small>压力题与证据</small></button></li>
+        <li><button type="button" data-step="ledger"><span>01</span><b>Claim Ledger</b><small>拆成可追溯事实</small></button></li>
+        <li><button type="button" data-step="roleAudit"><span>02</span><b>语义角色校验</b><small>动作、范围、归因、时态</small></button></li>
+        <li><button type="button" data-step="questions"><span>03</span><b>针对性拷打</b><small>只追问高价值缺口</small></button></li>
+        <li><button type="button" data-step="rewrite"><span>04</span><b>项目级重写</b><small>背景、职责、数据</small></button></li>
+        <li><button type="button" data-step="compression"><span>05</span><b>A4 内容压缩</b><small>评分、去重、容量门禁</small></button></li>
       </ol>
       <div class="rail-summary">
         <div><strong id="claimCount">0</strong><span>亮点素材</span></div>
@@ -71,6 +71,7 @@
 
   <input id="materialFile" type="file" accept=".txt,.md,.json,.pdf,application/json,application/pdf,text/plain,text/markdown,image/png,image/jpeg,image/webp,image/bmp" multiple hidden>
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
-  <script src="app.js" defer></script>
+  <script src="app.js?v=20260825-evidence-pipeline" defer></script>
 </body>
 </html>
+

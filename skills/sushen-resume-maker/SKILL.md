@@ -9,7 +9,7 @@ description: 将真实中文求职材料重构为“酥神/ASU 式”高信息�
 
 ## 必须执行的顺序
 
-`读取材料 → 初始 Claim Ledger → JD Matrix → 能力深挖 → 新增亮点 Claim → 事实校对与重新匹配 → resume-data.json → ASU 模板渲染 → interview-defense.json → 面试问题清单`
+`读取材料 → Claim Ledger → 语义级角色校验 → 针对性拷打 → 项目级重写 → A4 内容压缩 → JD Matrix 复核 → resume-data.json → ASU 模板渲染 → interview-defense.json → 面试问题清单`
 
 - 未建立 `claim-ledger.json`，不得写简历。
 - 用户提供 JD 时必须建立 `jd-matrix.json`。
@@ -17,6 +17,7 @@ description: 将真实中文求职材料重构为“酥神/ASU 式”高信息�
 - 最终简历只使用通过验证且被选中的 Claim。
 - 不因用户要求“写厉害一点”而提升角色、归因、时态或数字强度。
 - 用户要求停止追问时，立即停止；对缺口采用降级措辞、排除 Claim 或在面试清单中标明准备边界。
+- 项目级重写和 A4 压缩必须引用原 Claim ID；压缩只能取舍、去重和降低措辞，不能创造新事实。
 
 ## 1. 建立事实层
 
@@ -49,6 +50,12 @@ python scripts/validate_claim_ledger.py path/to/claim-ledger.json
 ```bash
 python scripts/validate_jd_matrix.py path/to/jd-matrix.json --ledger path/to/claim-ledger.json
 ```
+
+## 2.5 语义角色门禁与内容管线
+
+完整读取 [references/semantic-role-and-compression.md](references/semantic-role-and-compression.md)。在提出问题前，联合检查每条 Claim 的主语、动作强度、责任对象、决策信号、交付信号、项目时态与指标归因，输出角色支持上限和允许措辞。规则引擎只能降级或标记待确认，不得自动把候选人升级为 Owner。
+
+通过针对性拷打补充的新 Claim 先回到 Ledger，再按真实项目归组；项目稿固定组织为“背景与目标 / 我的职责 / 数据与指标”。最后按 JD 相关性、证据强度、业务价值、信息增量和风险进行 A4 压缩，所有保留与删除决策必须可解释。
 
 ## 3. 定向拷打经历
 
@@ -178,6 +185,7 @@ python scripts/validate_interview_defense.py path/to/interview-defense.json \
 - [references/style-guide.md](references/style-guide.md)：冻结的 ASU 视觉规则。
 - [references/interview-defense-schema.md](references/interview-defense-schema.md)：生成后的面试问题与回答边界。
 - [references/online-editor-contract.md](references/online-editor-contract.md)：在线修改、隐私和重新导出约定。
+- [references/semantic-role-and-compression.md](references/semantic-role-and-compression.md)：角色语义门禁、项目归组与 A4 内容预算。
 - `assets/resume_template.html`：用户指定的前端母版。
 - `scripts/render_resume.py`：原前端渲染脚本。
 - `scripts/validate_resume.py`：简历数据与文件校验器。

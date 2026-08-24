@@ -6,12 +6,13 @@
 
 GitHub Pages 根目录先进入 `interrogation/`，再进入 `editor/`。拷打台在浏览器本地完成：
 
-1. 输入目标 JD 与经历文本；
-2. 从经历中识别复杂问题、判断、方法、推动、体系化与影响等潜在线索；
-3. 每轮只问 1–3 个与材料相关的问题，并把有效回答沉淀成“深挖新增亮点” Claim；
-4. 在亮点形成后，人工确认 Claim 的验证状态、个人角色和时态；
-5. 导出 `claim-ledger.json`、`jd-matrix.json` 与 `interview-defense.json`；
-6. 把三个 JSON 交给 Skill 校验并生成 `resume-data.json`，再进入编辑器。
+1. 输入目标 JD 与经历文本，建立 Claim Ledger；
+2. 对每条 Claim 进行主语、动作、范围、时态与归因的联合角色校验；
+3. 每轮只问 1–3 个与材料和门禁缺口相关的问题，并把有效回答沉淀成新 Claim；
+4. 将通过门禁的 Claim 归入真实项目，生成“背景与目标 / 我的职责 / 数据与指标”项目稿；
+5. 依据岗位相关性、证据、价值、信息增量和风险完成 A4 字符预算压缩；
+6. 导出 `claim-ledger.json`、`project-rewrite.json`、`a4-content-draft.json`、`jd-matrix.json` 与 `interview-defense.json`；
+7. 把完整数据链交给 Skill 校验并生成 `resume-data.json`，再进入编辑器。
 
 Owner、责任边界和数字归因不得成为连续追问主题。只有当某条新增亮点准备进入简历且确实含强角色词、强因果或指标时，才追加一次准确性校对。
 

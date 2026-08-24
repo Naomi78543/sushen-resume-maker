@@ -10,13 +10,13 @@
   const TESSERACT_URL = "https://cdn.jsdelivr.net/npm/tesseract.js@7.0.0/dist/tesseract.min.js";
   const MAX_FILE_BYTES = 20 * 1024 * 1024;
   const MAX_PDF_PAGES = 20;
-  const STEPS = ["intake", "questions", "claims", "matrix", "defense"];
+  const STEPS = ["ledger", "roleAudit", "questions", "rewrite", "compression"];
   const STEP_META = {
-    intake: ["材料与目标 JD", "粘贴真实经历，先拆事实再开始追问"],
-    questions: ["能力深挖", "从业务难度、判断、分析、推动、沉淀和结果中补出原简历遗漏的竞争力"],
-    claims: ["亮点素材库 · Claim Ledger", "把原始事实与新挖出的能力素材放在一起，最后再做准确性校对"],
-    matrix: ["JD Matrix 岗位矩阵", "用已确认 Claim 匹配岗位要求，并明确可迁移边界"],
-    defense: ["面试防御", "把强表述、指标和高权重缺口转换成压力追问与安全边界"]
+    ledger: ["Claim Ledger 事实台账", "先把材料拆成可追溯的原子事实；没有台账，不进入改写"],
+    roleAudit: ["语义级角色校验", "联合判断主语、动作强度、责任范围、项目状态与指标归因"],
+    questions: ["针对性拷打", "只追问最可能补出判断、方法、推动、沉淀和结果的缺口"],
+    rewrite: ["项目级重写", "以项目为单位组织背景与目标、我的职责、数据与指标"],
+    compression: ["A4 内容压缩", "按岗位相关性、证据强度、业务价值和风险压缩到一页容量"]
   };
 
   const ROLE_OPTIONS = [
@@ -65,12 +65,12 @@
   let tesseractPromise = null;
   let importBusy = false;
   let state = loadState();
-  let activeStep = state.activeStep || "intake";
+  let activeStep = STEPS.includes(state.activeStep) ? state.activeStep : "ledger";
 
   function blankState() {
     return {
       version: 1,
-      activeStep: "intake",
+      activeStep: "ledger",
       target: { title: "", company: "", experience: "", jd: "" },
       material: "",
       sources: [],
@@ -79,6 +79,9 @@
       rounds: [],
       currentRound: 0,
       defense: [],
+      roleAudits: [],
+      projectDrafts: [],
+      compression: null,
       stopped: false,
       updatedAt: new Date().toISOString()
     };
@@ -87,7 +90,9 @@
   function loadState() {
     try {
       const saved = JSON.parse(localStorage.getItem(STORAGE_KEY));
-      return saved && saved.version === 1 ? { ...blankState(), ...saved } : blankState();
+      if (!saved || saved.version !== 1) return blankState();
+      const migratedStep = { intake: "ledger", claims: "roleAudit", matrix: "rewrite", defense: "compression" }[saved.activeStep] || saved.activeStep;
+      return { ...blankState(), ...saved, activeStep: STEPS.includes(migratedStep) ? migratedStep : "ledger" };
     } catch (_) {
       return blankState();
     }
@@ -171,9 +176,9 @@
 
   function navigate(step) {
     if (!STEPS.includes(step)) return;
-    if (step !== "intake" && !state.claims.length) {
-      showToast("请先粘贴材料并开始首轮拷打", true);
-      step = "intake";
+    if (step !== "ledger" && !state.claims.length) {
+      showToast("请先粘贴材料并建立 Claim Ledger", true);
+      step = "ledger";
     }
     activeStep = step;
     saveState();
@@ -202,11 +207,11 @@
   function render() {
     renderHeader();
     contentPanel.replaceChildren();
-    if (activeStep === "intake") renderIntake();
+    if (activeStep === "ledger") renderIntake();
+    else if (activeStep === "roleAudit") renderRoleAudit();
     else if (activeStep === "questions") renderQuestions();
-    else if (activeStep === "claims") renderClaims();
-    else if (activeStep === "matrix") renderMatrix();
-    else renderDefense();
+    else if (activeStep === "rewrite") renderRewrite();
+    else renderCompression();
     updateSummary();
   }
 
@@ -245,10 +250,47 @@
     actions.append(
       button("上传 PDF / 图片 / 文本", "soft", () => { if (!importBusy) materialFile.click(); }),
       button("载入脱敏示例", "", loadSample),
-      button(state.claims.length ? "重新分析并开始拷打" : "开始首轮拷打", "primary", analyzeMaterial)
+      button(state.claims.length ? "重新建立 Claim Ledger" : "建立 Claim Ledger", "primary", analyzeMaterial)
     );
     form.append(actions);
     contentPanel.append(form);
+    if (state.claims.length) renderLedgerOverview();
+  }
+
+  function renderLedgerOverview() {
+    const ledger = buildLedger();
+    const usable = state.claims.filter(claim => ["source_grounded", "user_attested"].includes(claim.verification)).length;
+    const risky = state.claims.filter(claim => claim.risk_flags.length).length;
+    const summary = element("section", { className: "pipeline-summary" });
+    summary.append(
+      pipelineStat(state.claims.length, "原子 Claim"),
+      pipelineStat(usable, "已有事实支持"),
+      pipelineStat(risky, "待校验语义风险"),
+      pipelineStat(ledger.evidence_gaps.length, "证据缺口")
+    );
+    contentPanel.append(summary);
+    const table = element("section", { className: "ledger-table" });
+    state.claims.slice(0, 12).forEach(claim => {
+      const row = element("div", { className: "ledger-row" });
+      row.append(
+        element("b", { text: claim.claim_id }),
+        element("span", { text: claim.normalized_claim }),
+        element("em", { text: TYPE_OPTIONS.find(item => item[0] === claim.claim_type)?.[1] || claim.claim_type }),
+        element("i", { text: claim.verification === "unknown" ? "待确认" : "可追溯" })
+      );
+      table.append(row);
+    });
+    if (state.claims.length > 12) table.append(element("p", { className: "field-help", text: `另有 ${state.claims.length - 12} 条 Claim，将在后续阶段共同处理。` }));
+    contentPanel.append(table);
+    const actions = element("div", { className: "button-row" });
+    actions.append(button("进入语义级角色校验", "primary", () => { refreshRoleAudits(); saveState(); navigate("roleAudit"); }));
+    contentPanel.append(actions);
+  }
+
+  function pipelineStat(value, label) {
+    const node = element("div");
+    node.append(element("strong", { text: String(value) }), element("span", { text: label }));
+    return node;
   }
 
   function normalizeLine(line) {
@@ -303,6 +345,132 @@
     if (/使|带来|驱动|促成|实现.*(?:增长|提升|降低)/.test(text)) risks.push("causality_not_established");
     if (tense === "planned" && deliveredWord(text)) risks.push("planned_as_delivered");
     return [...new Set(risks)];
+  }
+
+  function semanticRoleAudit(claim) {
+    const text = String(claim.normalized_claim || "");
+    const teamSubject = /团队|我们|共同|协同|配合|联合/.test(text);
+    const selfSubject = /本人|我|独立|主要负责|牵头|主导|Owner|负责人/.test(text);
+    const contributorCue = /参与|协助|支持|配合/.test(text);
+    const ownershipCue = /主导|牵头|Owner|负责人|全盘负责|从\s*0\s*(?:到|→|->)\s*1/i.test(text);
+    const boundedResponsibilityCue = /负责.{2,36}(?:运营|模块|页面|流程|策划|分析|审核|内容|数据|产品|功能|渠道|项目)/.test(text);
+    const decisionCue = /定义|决策|取舍|制定|设计|规划|优先级|资源分配|验收/.test(text);
+    const deliveryCue = /交付|落地|上线|形成|发布|完成|闭环|采用/.test(text);
+    const causalCue = /使|促成|驱动|带来|因此|从而/.test(text) && /提升|增长|降低|减少|转化|GMV|效率/.test(text);
+    let maxRole = "executor";
+    if (contributorCue) maxRole = "module_contributor";
+    if (/协调|统筹|推进/.test(text)) maxRole = "project_coordinator";
+    if ((boundedResponsibilityCue || ((selfSubject || /负责/.test(text)) && (decisionCue || deliveryCue))) && !contributorCue) maxRole = "module_owner";
+    if (ownershipCue && decisionCue && deliveryCue && !teamSubject) maxRole = "project_owner";
+    if (teamSubject && !selfSubject && claim.claim_type.includes("result")) maxRole = "team_result_only";
+
+    const rank = { unknown: 0, team_result_only: 0, executor: 1, module_contributor: 2, project_coordinator: 3, module_owner: 4, project_owner: 5 };
+    const reasons = [];
+    if (teamSubject) reasons.push("句子含团队或协同主语，结果不能默认归个人");
+    if (ownershipCue && !(decisionCue && deliveryCue)) reasons.push("强角色词缺少决策与交付闭环的共同支持");
+    if (causalCue) reasons.push("结果因果强度需要数据口径或验证方法支持");
+    if (claim.tense === "planned" && deliveredWord(text)) reasons.push("规划时态与完成式动作冲突");
+    if (claim.role_scope === "unknown") reasons.push("个人责任范围尚未确认");
+    const roleOverreach = rank[claim.role_scope] > rank[maxRole] && !["team_result_only", "unknown"].includes(claim.role_scope);
+    if (roleOverreach) reasons.push("当前角色强度高于句内可支持上限");
+    const blocking = roleOverreach || (ownershipCue && rank[maxRole] < rank.module_owner) || (claim.tense === "planned" && deliveredWord(text));
+    const needsQuestion = blocking || claim.role_scope === "unknown" || causalCue || (teamSubject && claim.claim_type.includes("result"));
+    const allowedWording = maxRole === "project_owner" ? "可使用“主导该项目”，但必须保留项目边界"
+      : maxRole === "module_owner" ? "使用“负责该限定模块”，不升级为整体项目 Owner"
+        : maxRole === "project_coordinator" ? "使用“协调 / 推动项目进度”，不独占业务结果"
+          : maxRole === "module_contributor" ? "使用“参与 / 协同完成”，突出本人具体动作"
+            : maxRole === "team_result_only" ? "保留团队结果，并另写本人承担的具体环节"
+              : "使用“执行 / 完成具体任务”，补充方法或交付物";
+    return {
+      claim_id: claim.claim_id,
+      subject: teamSubject ? (selfSubject ? "个人＋团队" : "团队 / 协同") : (selfSubject ? "个人明确" : "主语隐含"),
+      max_role: maxRole,
+      current_role: claim.role_scope,
+      decision_signal: decisionCue,
+      delivery_signal: deliveryCue,
+      causal_signal: causalCue,
+      status: blocking ? "blocked" : needsQuestion ? "review" : "pass",
+      reasons,
+      allowed_wording: allowedWording,
+      needs_question: needsQuestion
+    };
+  }
+
+  function refreshRoleAudits() {
+    state.roleAudits = state.claims.map(semanticRoleAudit);
+  }
+
+  function downgradeRoleWording(text, role) {
+    if (role === "project_owner") return String(text || "").trim();
+    const verb = role === "module_contributor" ? "参与" : role === "project_coordinator" ? "推动" : role === "module_owner" ? "负责" : "执行";
+    return String(text || "")
+      .replace(/从\s*0\s*(?:到|→|->)\s*1\s*/gi, "")
+      .replace(/项目\s*Owner|Owner|主导|牵头|全盘负责|负责人/gi, verb)
+      .replace(new RegExp(`${verb}(?:该)?(?:项目)?${verb}`, "g"), verb)
+      .replace(/\s+/g, " ")
+      .trim();
+  }
+
+  function renderRoleAudit() {
+    if (!state.claims.length) return navigate("ledger");
+    refreshRoleAudits();
+    const blocked = state.roleAudits.filter(item => item.status === "blocked").length;
+    const review = state.roleAudits.filter(item => item.status === "review").length;
+    const intro = element("div", { className: "round-banner" });
+    const copy = element("div");
+    copy.append(element("strong", { text: `阻断 ${blocked} 条 · 待追问 ${review} 条 · 通过 ${state.roleAudits.length - blocked - review} 条` }));
+    copy.append(element("p", { text: "这是本地主语—动作—范围—时态—归因联合校验，不会把关键词命中冒充 AI 判断；有风险的 Claim 会触发下一步针对性问题。" }));
+    intro.append(copy, element("span", { className: "chip", text: "只降级，不自动升级角色" }));
+    contentPanel.append(intro);
+
+    state.roleAudits.forEach(audit => {
+      const claim = state.claims.find(item => item.claim_id === audit.claim_id);
+      const card = element("article", { className: `audit-card ${audit.status}` });
+      const head = element("div", { className: "card-head" });
+      const title = element("div");
+      title.append(element("h3", { text: `${audit.claim_id} · ${audit.status === "pass" ? "校验通过" : audit.status === "blocked" ? "暂不允许进入简历" : "需要针对性确认"}` }));
+      title.append(element("p", { text: claim.normalized_claim }));
+      head.append(title, element("span", { className: `audit-status ${audit.status}`, text: audit.status.toUpperCase() }));
+      const grid = element("div", { className: "audit-grid" });
+      grid.append(
+        auditDatum("语义主语", audit.subject),
+        auditDatum("当前角色", ROLE_OPTIONS.find(item => item[0] === audit.current_role)?.[1] || audit.current_role),
+        auditDatum("句内支持上限", ROLE_OPTIONS.find(item => item[0] === audit.max_role)?.[1] || audit.max_role),
+        auditDatum("允许措辞", audit.allowed_wording)
+      );
+      const reasons = element("div", { className: "risk-list" });
+      (audit.reasons.length ? audit.reasons : ["未发现角色、时态或归因冲突"]).forEach(reason => reasons.append(element("span", { className: audit.status === "pass" ? "ability-chip" : "risk-chip", text: reason })));
+      const safe = button("采用安全角色上限", "compact-button", () => {
+        claim.role_scope = audit.max_role;
+        claim.normalized_claim = downgradeRoleWording(claim.normalized_claim, audit.max_role);
+        claim.risk_flags = detectRisks(claim.normalized_claim, claim.role_scope, claim.tense);
+        refreshRoleAudits();
+        saveState();
+        render();
+      });
+      safe.disabled = ["unknown", "team_result_only"].includes(audit.max_role) || claim.role_scope === audit.max_role;
+      card.append(head, grid, reasons, element("div", { className: "button-row" }, [safe]));
+      contentPanel.append(card);
+    });
+    const actions = element("div", { className: "button-row" });
+    actions.append(
+      button("返回 Claim Ledger", "", () => navigate("ledger")),
+      button("进入针对性拷打", "primary", () => {
+        state.rounds = [];
+        state.currentRound = 0;
+        state.stopped = false;
+        ensureRound(0);
+        saveState();
+        navigate("questions");
+      })
+    );
+    contentPanel.append(actions);
+  }
+
+  function auditDatum(label, value) {
+    const node = element("div");
+    node.append(element("span", { text: label }), element("strong", { text: value }));
+    return node;
   }
 
   function createClaim(text, index, verification, origin = "material") {
@@ -403,9 +571,30 @@
     state.rounds = [];
     state.currentRound = 0;
     state.stopped = false;
-    ensureRound(0);
+    state.projectDrafts = [];
+    state.compression = null;
+    refreshRoleAudits();
     saveState();
-    navigate("questions");
+    navigate("roleAudit");
+  }
+
+  function roleAuditQuestionCandidates() {
+    if (!state.roleAudits.length) refreshRoleAudits();
+    return state.roleAudits.filter(audit => audit.needs_question).map(audit => {
+      const claim = state.claims.find(item => item.claim_id === audit.claim_id);
+      const metricQuestion = audit.causal_signal || claim?.claim_type === "metric_result";
+      return {
+        key: `role-audit-${audit.claim_id}`,
+        dimension: metricQuestion ? "指标归因校准" : "个人贡献校准",
+        category: "role_calibration",
+        claimId: audit.claim_id,
+        priority: audit.status === "blocked" ? 136 : 119,
+        prompt: metricQuestion
+          ? `围绕“${shorten(claim?.normalized_claim)}”，先不讨论头衔：你亲自做了哪个分析或动作，数据来自哪里，能确认的变化范围是什么？`
+          : `围绕“${shorten(claim?.normalized_claim)}”，请只说你亲自完成的模块：你做了哪个关键判断、交付了什么、它为何重要？`,
+        hint: "答案用于确定可写的个人贡献，不要求证明你是整个项目 Owner。"
+      };
+    });
   }
 
   function experienceOpportunityCandidates() {
@@ -515,7 +704,7 @@
     const experience = experienceOpportunityCandidates();
     const jd = hiddenJdCandidates();
     let candidates;
-    if (index === 0) candidates = [...experience, ...generalAbilityCandidates(0), ...jd];
+    if (index === 0) candidates = [...roleAuditQuestionCandidates(), ...experience, ...generalAbilityCandidates(0), ...jd];
     else if (index === 1) candidates = [...answerFollowupCandidates(), ...generalAbilityCandidates(1), ...experience, ...jd];
     else candidates = [...generalAbilityCandidates(2), ...answerFollowupCandidates(), ...finalAccuracyCandidate()];
     candidates = candidates.filter(item => !asked.has(item.key));
@@ -565,7 +754,7 @@
 
     const actions = element("div", { className: "button-row" });
     actions.append(
-      button("返回修改材料", "", () => navigate("intake")),
+      button("返回角色校验", "", () => navigate("roleAudit")),
       button("先停止深挖，按现有素材继续", "soft", stopQuestions),
       button(state.currentRound >= 2 ? "完成深挖，整理亮点素材" : "保存回答并继续深挖", "primary", nextRound)
     );
@@ -619,8 +808,9 @@
     absorbRoundAnswers(round);
     refreshRequirementMatches();
     if (state.currentRound >= 2) {
+      initializeProjectDrafts();
       saveState();
-      navigate("claims");
+      navigate("rewrite");
       return;
     }
     state.currentRound += 1;
@@ -633,8 +823,9 @@
     absorbRoundAnswers(state.rounds[state.currentRound]);
     state.stopped = true;
     refreshRequirementMatches();
+    initializeProjectDrafts();
     saveState();
-    navigate("claims");
+    navigate("rewrite");
   }
 
   function renderClaims() {
@@ -767,6 +958,254 @@
     const total = state.requirements.reduce((sum, req) => sum + Number(req.weight || 0), 0);
     const matched = state.requirements.reduce((sum, req) => sum + Number(req.weight || 0) * (factors[req.match_level] || 0), 0);
     return total ? Math.round(matched / total * 100) : 0;
+  }
+
+  function usableClaims() {
+    refreshRoleAudits();
+    const auditMap = new Map(state.roleAudits.map(item => [item.claim_id, item]));
+    return state.claims.filter(claim => claim.selected && ["source_grounded", "user_attested"].includes(claim.verification) && auditMap.get(claim.claim_id)?.status !== "blocked");
+  }
+
+  function initializeProjectDrafts() {
+    if (!state.projectDrafts.length) {
+      state.projectDrafts = [{
+        project_id: "P-001",
+        name: state.target.experience || "核心项目",
+        subtitle: "",
+        generated_label: !state.target.experience,
+        label_source_claim_ids: state.claims.slice(0, 3).map(item => item.claim_id)
+      }];
+    }
+    const fallback = state.projectDrafts[0]?.project_id;
+    usableClaims().forEach(claim => {
+      if (!state.projectDrafts.some(project => project.project_id === claim.project_id)) claim.project_id = fallback;
+    });
+  }
+
+  function addProjectDraft() {
+    const next = state.projectDrafts.length + 1;
+    state.projectDrafts.push({ project_id: `P-${String(next).padStart(3, "0")}`, name: `项目 ${next}`, subtitle: "", generated_label: true, label_source_claim_ids: [] });
+    saveState();
+    render();
+  }
+
+  function extractHighlights(text) {
+    const matches = String(text || "").match(/\d+(?:\.\d+)?\s*(?:%|万|亿|倍|人|家|个|次|天|小时)?|GMV|CTR|CVR|ROI|SQL|Excel|AI\s*Agent|SOP|A\/B\s*Test|TikTok|Shopify/gi) || [];
+    return [...new Set(matches.map(item => item.trim()).filter(Boolean))];
+  }
+
+  function visibleClaim(claim) {
+    const audit = semanticRoleAudit(claim);
+    return {
+      text: downgradeRoleWording(claim.normalized_claim, audit.max_role),
+      verification: claim.verification,
+      source_note: claim.notes || (claim.origin === "interview" ? "在线针对性拷打回答" : "用户原始材料"),
+      claim_ids: [claim.claim_id],
+      highlights: extractHighlights(claim.normalized_claim),
+      role_scope: audit.max_role,
+      risk_flags: claim.risk_flags || []
+    };
+  }
+
+  function buildProjectOutput(project) {
+    const claims = usableClaims().filter(claim => claim.project_id === project.project_id);
+    const background = [];
+    const responsibilities = [];
+    const impact = [];
+    claims.forEach(claim => {
+      const item = visibleClaim(claim);
+      if (["metric_result", "qualitative_result"].includes(claim.claim_type)) impact.push(item);
+      else if (["identity", "status", "other"].includes(claim.claim_type) && !/负责|参与|协助|分析|设计|搭建|推动|制定|优化|执行|形成/.test(claim.normalized_claim)) background.push(item);
+      else responsibilities.push(item);
+    });
+    return {
+      project_id: project.project_id,
+      name: project.name,
+      subtitle: project.subtitle,
+      generated_label: project.generated_label,
+      label_source_claim_ids: [...new Set(project.label_source_claim_ids || claims.flatMap(claim => [claim.claim_id]))],
+      background,
+      responsibilities,
+      impact,
+      missingMetrics: impact.length ? [] : ["建议补充：项目规模 / 效率变化 / 采用范围 / 核心业务指标"]
+    };
+  }
+
+  function renderRewriteList(title, items, emptyText) {
+    const block = element("section", { className: "rewrite-section" });
+    block.append(element("h4", { text: title }));
+    if (!items.length) block.append(element("p", { className: "rewrite-empty", text: emptyText }));
+    items.forEach(item => {
+      const row = element("div", { className: "rewrite-line" });
+      row.append(element("span", { text: item.text }), element("small", { text: item.claim_ids.join(" · ") }));
+      block.append(row);
+    });
+    return block;
+  }
+
+  function renderRewrite() {
+    if (!state.claims.length) return navigate("ledger");
+    initializeProjectDrafts();
+    const intro = element("div", { className: "round-banner" });
+    const copy = element("div");
+    copy.append(element("strong", { text: `${usableClaims().length} 条通过门禁的 Claim · ${state.projectDrafts.length} 个项目` }));
+    copy.append(element("p", { text: "先确认每条事实属于哪个项目，再按项目生成三个固定区块。项目名可整理成结构标签，但公司、岗位、时间、数字和角色不得新增。" }));
+    intro.append(copy, element("span", { className: "chip", text: "每句保留 claim_ids" }));
+    contentPanel.append(intro);
+
+    const assignment = element("section", { className: "assignment-card" });
+    assignment.append(element("h3", { text: "事实归属" }));
+    usableClaims().forEach(claim => {
+      const row = element("div", { className: "assignment-row" });
+      const select = selectControl(claim.project_id, state.projectDrafts.map(project => [project.project_id, project.name]), value => {
+        claim.project_id = value;
+        state.compression = null;
+        saveState();
+        render();
+      });
+      row.append(element("span", { text: claim.normalized_claim }), select);
+      assignment.append(row);
+    });
+    assignment.append(element("div", { className: "button-row" }, [button("＋ 添加项目", "compact-button", addProjectDraft)]));
+    contentPanel.append(assignment);
+
+    state.projectDrafts.forEach(project => {
+      const output = buildProjectOutput(project);
+      const card = element("article", { className: "project-rewrite-card" });
+      const name = field("项目名称（必须来自材料或由用户确认）", project.name, value => { project.name = value; state.compression = null; }, { placeholder: "例如：供应商入驻与商品审核流程" });
+      const subtitle = field("项目定位 / 限定模块", project.subtitle, value => { project.subtitle = value; state.compression = null; }, { placeholder: "例如：流程标准化与跨方协作" });
+      card.append(name, subtitle);
+      card.append(
+        renderRewriteList("背景与目标", output.background, "原材料没有明确背景，不自动补写；可返回针对性拷打补充。"),
+        renderRewriteList("我的职责", output.responsibilities, "暂无通过角色门禁的个人动作。"),
+        renderRewriteList("数据与指标", output.impact, "原材料没有可确认结果，不编造数字；提示仅保留在编辑阶段。")
+      );
+      contentPanel.append(card);
+    });
+
+    const actions = element("div", { className: "button-row" });
+    actions.append(
+      button("返回针对性拷打", "", () => navigate("questions")),
+      button("执行 A4 内容压缩", "primary", () => { state.compression = buildCompression(); saveState(); navigate("compression"); })
+    );
+    contentPanel.append(actions);
+  }
+
+  function claimScore(claim) {
+    const reqScore = state.requirements.filter(req => req.evidence_claim_ids.includes(claim.claim_id)).reduce((sum, req) => sum + Number(req.weight || 0) * 4, 0);
+    const evidence = claim.verification === "source_grounded" ? 28 : 24;
+    const impact = claim.claim_type === "metric_result" ? 24 : claim.claim_type === "qualitative_result" ? 18 : claim.claim_type === "deliverable" ? 15 : claim.claim_type === "method" ? 12 : 8;
+    const role = ["module_owner", "project_owner", "project_coordinator"].includes(claim.role_scope) ? 8 : 4;
+    const risk = Math.min(24, (claim.risk_flags || []).length * 4);
+    const lengthPenalty = Math.max(0, Math.ceil((claim.normalized_claim.length - 80) / 20) * 2);
+    return Math.max(0, reqScore + evidence + impact + role - risk - lengthPenalty);
+  }
+
+  function buildCompression() {
+    initializeProjectDrafts();
+    const budget = 820;
+    const candidates = usableClaims().map(claim => ({
+      claim_id: claim.claim_id,
+      project_id: claim.project_id,
+      section: ["metric_result", "qualitative_result"].includes(claim.claim_type) ? "impact" : "responsibilities",
+      text: visibleClaim(claim).text,
+      score: claimScore(claim),
+      characters: visibleClaim(claim).text.length,
+      selected: false,
+      reason: ""
+    })).sort((a, b) => b.score - a.score || a.characters - b.characters);
+    let used = 0;
+    const fingerprints = [];
+    candidates.forEach(item => {
+      const words = new Set(concepts(item.text).concat(extractHighlights(item.text)).map(word => word.toLowerCase()));
+      const duplicate = fingerprints.some(existing => words.size && [...words].filter(word => existing.has(word)).length / Math.max(1, Math.min(words.size, existing.size)) >= .8);
+      if (duplicate) item.reason = "与更高分内容语义重复";
+      else if (used + item.characters > budget) item.reason = "超出 A4 经历内容预算";
+      else {
+        item.selected = true;
+        item.reason = "岗位相关、证据可用且信息增量较高";
+        used += item.characters;
+        fingerprints.push(words);
+      }
+    });
+    return {
+      version: "1.0",
+      budget,
+      used,
+      selected_count: candidates.filter(item => item.selected).length,
+      excluded_count: candidates.filter(item => !item.selected).length,
+      items: candidates,
+      projects: state.projectDrafts.map(project => {
+        const output = buildProjectOutput(project);
+        const selectedIds = new Set(candidates.filter(item => item.selected && item.project_id === project.project_id).map(item => item.claim_id));
+        return {
+          ...output,
+          background: output.background.filter(item => item.claim_ids.some(id => selectedIds.has(id))).slice(0, 1),
+          responsibilities: output.responsibilities.filter(item => item.claim_ids.some(id => selectedIds.has(id))),
+          impact: output.impact.filter(item => item.claim_ids.some(id => selectedIds.has(id)))
+        };
+      }),
+      generated_at: new Date().toISOString()
+    };
+  }
+
+  function renderCompression() {
+    if (!state.compression) state.compression = buildCompression();
+    const result = state.compression;
+    const intro = element("section", { className: "compression-score" });
+    intro.append(
+      pipelineStat(`${result.used}/${result.budget}`, "已用字符预算"),
+      pipelineStat(result.selected_count, "入选 Claim"),
+      pipelineStat(result.excluded_count, "压缩 / 去重"),
+      pipelineStat(`${calculateCoverage()}%`, "JD 证据覆盖")
+    );
+    contentPanel.append(intro);
+
+    result.projects.forEach(project => {
+      const card = element("article", { className: "project-rewrite-card a4-draft" });
+      card.append(element("div", { className: "card-head" }, [
+        element("div", {}, [element("h3", { text: project.name }), element("p", { text: project.subtitle || "项目级 A4 内容稿" })]),
+        element("span", { className: "chip", text: `${project.background.length + project.responsibilities.length + project.impact.length} 条` })
+      ]));
+      card.append(
+        renderRewriteList("背景与目标", project.background, "未从事实源中找到可用背景"),
+        renderRewriteList("我的职责", project.responsibilities, "没有通过门禁且进入 A4 预算的职责"),
+        renderRewriteList("数据与指标", project.impact, "没有真实指标；正式简历不显示补数提示")
+      );
+      contentPanel.append(card);
+    });
+
+    const decisions = element("section", { className: "compression-decisions" });
+    decisions.append(element("h3", { text: "压缩决策" }));
+    result.items.forEach(item => {
+      const row = element("div", { className: `compression-row ${item.selected ? "kept" : "dropped"}` });
+      row.append(
+        element("b", { text: `${item.claim_id} · ${item.score} 分` }),
+        element("span", { text: item.text }),
+        element("em", { text: item.selected ? "保留" : item.reason })
+      );
+      decisions.append(row);
+    });
+    contentPanel.append(decisions);
+
+    const handoff = element("section", { className: "handoff-card" });
+    handoff.append(element("h3", { text: "完整证据链已建立" }));
+    handoff.append(element("p", { text: "Claim Ledger → 语义角色校验 → 针对性回答 → 项目结构 → A4 入选决策均保存在交接数据中；编辑器不会失去 claim_ids。" }));
+    const exports = element("div", { className: "export-grid" });
+    exports.append(
+      button("下载 Claim Ledger", "", () => downloadJson("claim-ledger.json", buildLedger())),
+      button("下载项目重写稿", "", () => downloadJson("project-rewrite.json", { projects: state.projectDrafts.map(buildProjectOutput) })),
+      button("下载 A4 内容稿", "", () => downloadJson("a4-content-draft.json", result))
+    );
+    handoff.append(exports);
+    const actions = element("div", { className: "button-row" });
+    actions.append(
+      button("返回项目级重写", "", () => navigate("rewrite")),
+      button("重新计算压缩", "soft", () => { state.compression = buildCompression(); saveState(); render(); }),
+      button("带着完整链路去编辑器", "primary", sendToEditor)
+    );
+    handoff.append(actions);
+    contentPanel.append(handoff);
   }
 
   function renderMatrix() {
@@ -946,23 +1385,25 @@
       let tense = claim.tense;
       if (verification === "planned" && tense !== "planned") tense = "planned";
       if (tense === "planned" && deliveredWord(claim.normalized_claim)) { verification = "unknown"; tense = "unknown"; }
-      const role = strongRole(claim.normalized_claim) && !["module_owner", "project_owner"].includes(claim.role_scope) ? "module_owner" : claim.role_scope;
+      const audit = semanticRoleAudit(claim);
+      const role = audit.status === "blocked" ? audit.max_role : claim.role_scope;
+      const normalizedClaim = audit.status === "blocked" ? downgradeRoleWording(claim.normalized_claim, audit.max_role) : claim.normalized_claim;
       return {
         claim_id: claim.claim_id,
         experience_id: "EXP-001",
         claim_type: claim.claim_type,
         raw_claim: claim.raw_claim,
-        normalized_claim: claim.normalized_claim,
-        action: claim.normalized_claim,
+        normalized_claim: normalizedClaim,
+        action: normalizedClaim,
         methods: [],
         business_object: "",
         deliverables: [],
-        result: claim.claim_type.includes("result") ? claim.normalized_claim : "",
+        result: claim.claim_type.includes("result") ? normalizedClaim : "",
         role_scope: role,
         tense,
         verification,
         source_refs: [{ source_id: claim.notes ? "S-002" : "S-001", support_type: "supports", locator: claim.notes ? "在线拷打回答" : "用户粘贴材料", excerpt: shorten(claim.raw_claim, 120) }],
-        risk_flags: [...new Set(claim.risk_flags)],
+        risk_flags: [...new Set([...(claim.risk_flags || []), ...(audit.status === "blocked" ? ["strong_role_term"] : [])])],
         notes: claim.notes || ""
       };
     });
@@ -1065,15 +1506,21 @@
   }
 
   async function copyHandoff() {
+    initializeProjectDrafts();
+    if (!state.compression) state.compression = buildCompression();
     const prompt = [
       "使用 $sushen-resume-maker，读取以下在线拷打结果：",
       "1. 校验 Claim Ledger 与 JD Matrix；",
       "2. 只使用验证通过且被选中的 Claim；",
-      "3. 生成一页中文 ASU 简历、resume-data.json 和面试问题清单；",
-      "4. 不得把可迁移经验改写成目标市场直接经验；不能确认的内容降级或删除。",
+      "3. 复核语义角色门禁和项目级重写，只允许在 A4 压缩稿中取舍；",
+      "4. 生成一页中文 ASU 简历、resume-data.json 和面试问题清单；",
+      "5. 不得把可迁移经验改写成目标市场直接经验；不能确认的内容降级或删除。",
       "",
       "CLAIM_LEDGER:", JSON.stringify(buildLedger(), null, 2),
       "", "JD_MATRIX:", JSON.stringify(buildMatrix(), null, 2),
+      "", "ROLE_AUDITS:", JSON.stringify(state.roleAudits, null, 2),
+      "", "PROJECT_REWRITE:", JSON.stringify({ projects: state.projectDrafts.map(buildProjectOutput) }, null, 2),
+      "", "A4_COMPRESSION:", JSON.stringify(state.compression, null, 2),
       "", "INTERVIEW_DEFENSE:", JSON.stringify(buildDefense(), null, 2)
     ].join("\n");
     try {
@@ -1085,7 +1532,18 @@
   }
 
   function sendToEditor() {
-    localStorage.setItem(HANDOFF_KEY, JSON.stringify({ target: state.target, ledger: buildLedger(), matrix: buildMatrix(), defense: buildDefense(), created_at: new Date().toISOString() }));
+    initializeProjectDrafts();
+    if (!state.compression) state.compression = buildCompression();
+    localStorage.setItem(HANDOFF_KEY, JSON.stringify({
+      target: state.target,
+      ledger: buildLedger(),
+      roleAudits: state.roleAudits,
+      matrix: buildMatrix(),
+      projectRewrite: { projects: state.projectDrafts.map(buildProjectOutput) },
+      compression: state.compression,
+      defense: buildDefense(),
+      created_at: new Date().toISOString()
+    }));
     window.location.href = "../editor/?from=interrogation";
   }
 
@@ -1102,6 +1560,9 @@
     state.requirements = [];
     state.rounds = [];
     state.defense = [];
+    state.roleAudits = [];
+    state.projectDrafts = [];
+    state.compression = null;
     saveState();
     render();
     showToast("已载入脱敏示例，可直接开始拷打");
@@ -1320,3 +1781,4 @@
 
   render();
 })();
+

@@ -192,13 +192,13 @@ button { cursor: pointer; }
 .json-editor { min-height: 55vh; padding: 11px; resize: vertical; font: 12px/1.55 Consolas, "SFMono-Regular", monospace; }
 .json-actions { display: flex; gap: 8px; margin-top: 9px; }
 .inline-warning { margin: 10px 0 0; padding: 9px 10px; border-left: 3px solid var(--clay); color: #74402f; background: #fbede7; font-size: 12px; line-height: 1.5; }
-.handoff-summary { display: grid; grid-template-columns: repeat(3,1fr); gap: 8px; margin-bottom: 12px; }
+.handoff-summary { display: grid; grid-template-columns: repeat(5,minmax(0,1fr)); gap: 8px; margin-bottom: 12px; }
 .handoff-stat { display: grid; gap: 2px; padding: 12px; border: 1px solid var(--line); border-radius: 8px; background: var(--soft); text-align: center; }
 .handoff-stat strong { color: var(--blue); font: 700 22px Georgia,serif; }
 .handoff-stat span { color: var(--muted); font-size: 10px; }
 .defense-mini { margin-top: 8px; padding: 10px; border: 1px solid var(--line); border-radius: 7px; background: #fff; }
 .defense-mini strong { display: block; color: #394852; font-size: 12px; }
-.defense-mini p { margin: 4px 0 0; color: var(--muted); font-size: 10px; }
+.defense-mini p { margin: 4px 0 0; color: var(--muted); font-size: 10px; white-space: pre-line; }
 
 .preview-toolbar { background: #fff; }
 .preview-meta { display: flex; align-items: center; gap: 10px; }

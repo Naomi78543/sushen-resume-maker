@@ -611,19 +611,35 @@
     const ledger = handoff.ledger || {};
     const matrix = handoff.matrix || {};
     const defense = handoff.defense || {};
+    const roleAudits = handoff.roleAudits || [];
+    const projectRewrite = handoff.projectRewrite || { projects: [] };
+    const compression = handoff.compression || { projects: [], selected_count: 0, excluded_count: 0, used: 0, budget: 0 };
     const selected = matrix.selection?.selected_claim_ids || [];
     const summary = element("div", { className: "handoff-summary" });
     summary.append(
       handoffStat((ledger.claims || []).length, "Claim 总数"),
-      handoffStat(selected.length, "可用候选 Claim"),
+      handoffStat(roleAudits.filter(item => item.status === "blocked").length, "角色阻断"),
+      handoffStat((projectRewrite.projects || []).length, "项目重写"),
+      handoffStat(compression.selected_count || selected.length, "A4 入选 Claim"),
       handoffStat(`${matrix.summary?.weighted_coverage || 0}%`, "JD 证据覆盖")
     );
     editorPanel.append(summary);
     const target = element("section", { className: "section-card tint-blue" });
     target.append(element("div", { className: "card-head" }, [element("h3", { text: "目标岗位与证据交接" })]));
     target.append(element("p", { className: "panel-intro", text: `${handoff.target?.company || ""} ${handoff.target?.title || "目标岗位"}`.trim() }));
-    target.append(element("div", { className: "inline-warning", text: "拷打结果不会自动改写简历正文。请先把三个 JSON 交给 $sushen-resume-maker 生成 resume-data.json，再导入本编辑器；这样可以避免规则引擎把相关性误写成事实。" }));
+    target.append(element("div", { className: "inline-warning", text: `已接收 Claim Ledger → 语义角色校验 → 针对性拷打 → 项目级重写 → A4 压缩链路。压缩稿不会自动覆盖当前简历；请先核对其公司/项目归属，再由 $sushen-resume-maker 合并进 resume-data.json。当前预算 ${compression.used || 0}/${compression.budget || 0} 字。` }));
     editorPanel.append(target);
+    (compression.projects || []).forEach(project => {
+      const card = element("div", { className: "defense-mini" });
+      card.append(element("strong", { text: project.name || "未命名项目" }));
+      const lines = [
+        ...(project.background || []).map(item => `背景：${item.text}`),
+        ...(project.responsibilities || []).map(item => `职责：${item.text}`),
+        ...(project.impact || []).map(item => `指标：${item.text}`)
+      ];
+      card.append(element("p", { text: lines.join("\n") || "该项目暂无进入 A4 预算的内容。" }));
+      editorPanel.append(card);
+    });
     (defense.questions || []).slice(0, 5).forEach((question, index) => {
       const card = element("div", { className: "defense-mini" });
       card.append(element("strong", { text: `${index + 1}. ${question.primary_question}` }));
@@ -634,6 +650,8 @@
     [
       ["下载 Claim Ledger", "claim-ledger.json", ledger],
       ["下载 JD Matrix", "jd-matrix.json", matrix],
+      ["下载项目重写稿", "project-rewrite.json", projectRewrite],
+      ["下载 A4 内容稿", "a4-content-draft.json", compression],
       ["下载面试防御", "interview-defense.json", defense]
     ].forEach(([label, filename, value]) => {
       const item = element("button", { className: "button", text: label, type: "button" });

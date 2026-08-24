@@ -50,10 +50,12 @@ $CODEX_HOME/skills/sushen-resume-maker
 
 ```text
 读取材料
-  → 初始 Claim Ledger
-  → JD Matrix 岗位矩阵
-  → 能力深挖与新增亮点 Claim
-  → 最终事实校对
+  → Claim Ledger
+  → 语义级角色校验
+  → 针对性拷打与新增亮点 Claim
+  → 项目级重写
+  → A4 内容压缩
+  → JD Matrix 复核
   → ASU 前端简历
   → Interview Defense 面试防御
 ```
@@ -73,10 +75,12 @@ $CODEX_HOME/skills/sushen-resume-maker
 - 输入目标 JD 与原始经历材料；
 - 上传 PDF、扫描版 PDF 或多张简历图片：PDF 优先提取原生文字，无文字页和图片使用中英文 OCR；
 - 从原始材料识别数据、流程、协作、内容、产品和用户等可继续深挖的能力线索；
+- 联合校验主语、动作强度、责任范围、项目时态和指标归因，只允许降级或触发追问，不自动升级为 Owner；
 - 每轮只提出 1–3 个与经历相关的问题，并根据上一轮回答继续追问；
 - 把有效回答沉淀为“深挖新增亮点” Claim，再统一做准确性校对；
-- 生成 Claim Ledger、JD Matrix 与 Interview Defense；
-- 下载三个结构化 JSON，或一键复制给 `$sushen-resume-maker` 的完整交接指令；
+- 把通过门禁的 Claim 归入真实项目，生成“背景与目标 / 我的职责 / 数据与指标”项目稿；
+- 按 JD 相关性、证据强度、业务价值、信息增量和风险执行 A4 内容预算压缩；
+- 生成并下载 Claim Ledger、项目重写稿、A4 内容稿、JD Matrix 与 Interview Defense；
 - 将拷打结果带到简历编辑器查看和继续处理。
 
 `editor/` 简历编辑器支持：
