@@ -1,7 +1,7 @@
 (() => {
   "use strict";
 
-  const TEMPLATE_URL = "../skills/sushen-resume-maker/assets/resume_template.html";
+  const TEMPLATE_URL = "../skills/sushen-resume-maker/assets/resume_template.html?v=20260824-awards-skills";
   const EDITOR_STORAGE_KEY = "sushen-resume-editor-v1";
   const SOURCE_STORAGE_KEY = "sushen-source-resume-v1";
   const PDFJS_URL = "https://cdn.jsdelivr.net/npm/pdfjs-dist@6.1.200/build/pdf.min.mjs";

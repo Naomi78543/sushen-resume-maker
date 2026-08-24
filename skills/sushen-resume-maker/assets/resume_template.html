@@ -215,18 +215,12 @@
     .card-scope { margin-top: .7mm; color: var(--gray-700); }
     .card .fact-list { margin-top: 1mm; }
 
-    .compact-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 3mm 6mm; }
-    .compact-item { break-inside: avoid; }
-    .award-line { display: flex; justify-content: space-between; gap: 3mm; padding: 1mm 0; border-bottom: 1px dotted var(--gray-300); }
-    .skill-list { display: flex; flex-wrap: wrap; gap: 1.4mm; }
-    .skill {
-      padding: .6mm 1.5mm;
-      border: 1px solid var(--gray-300);
-      background: var(--ivory);
-      border-radius: 2px;
-      font-family: var(--mono);
-      font-size: 8.9px;
-    }
+    .compact-grid { display: grid; grid-template-columns: 1fr; gap: 1.2mm; }
+    .compact-row { display: grid; grid-template-columns: 16mm minmax(0,1fr); gap: 2mm; padding: .8mm 0; break-inside: avoid; }
+    .compact-label { color: var(--ink-blue); font-weight: 850; white-space: nowrap; }
+    .compact-values { min-width: 0; color: var(--gray-700); line-height: 1.55; }
+    .compact-value + .compact-value::before { content: " / "; color: var(--gray-400); }
+    .skill-list { font-family: var(--mono); font-size: 8.9px; }
 
     .empty { color: var(--gray-500); font-style: italic; }
 
@@ -236,7 +230,7 @@
       body { font-size: 10.4px; }
       .page { width: auto; min-height: auto; margin: 0; padding: 0; box-shadow: none; background: white; }
       a { color: inherit; border-bottom: 0; }
-      .company-bar, .education-row, .card, .skill { print-color-adjust: exact; -webkit-print-color-adjust: exact; }
+      .company-bar, .education-row, .card { print-color-adjust: exact; -webkit-print-color-adjust: exact; }
       .section-title, .company-bar, .project-title { break-after: avoid; }
     }
 
@@ -245,7 +239,7 @@
       .masthead, .masthead.has-photo { grid-template-columns: 1fr; align-items: start; }
       .photo-frame { width: 24mm; height: 28mm; }
       .contact { justify-content: flex-start; text-align: left; max-width: none; }
-      .compact-grid { grid-template-columns: 1fr; }
+      .compact-row { grid-template-columns: 1fr; gap: .8mm; }
       .company-bar { grid-template-columns: 1fr; }
       .company-right { justify-content: space-between; }
     }
@@ -425,21 +419,13 @@
         });
       }
 
-      const verifiedEndorsements = (data.endorsements || []).filter(item => item && item.text && allowedVerification(item.verification)).slice(0, 3);
       const positioningSummary = p.summary && p.summary.text && allowedVerification(p.summary.verification) ? p.summary : null;
-      if (verifiedEndorsements.length || positioningSummary) {
+      if (positioningSummary) {
         const summary = el('section', 'professional-summary');
         const body = el('div', 'professional-summary-body');
-        if (positioningSummary) {
-          const paragraph = el('p', 'positioning-line');
-          paragraph.append(richText(positioningSummary));
-          body.append(paragraph);
-        }
-        verifiedEndorsements.forEach(item => {
-          const paragraph = el('p', '');
-          paragraph.append(richText(item));
-          body.append(paragraph);
-        });
+        const paragraph = el('p', 'positioning-line');
+        paragraph.append(richText(positioningSummary));
+        body.append(paragraph);
         summary.append(body);
         root.append(summary);
       }
@@ -500,24 +486,24 @@
       renderCards('开源贡献', data.open_source, true);
       renderCards('技术项目与沉淀', data.projects, false);
 
-      const endorsedAwardNames = new Set(verifiedEndorsements.map(item => String(item.text || '').trim()).filter(Boolean));
-      const remainingAwards = (data.awards || []).filter(item => !endorsedAwardNames.has(String(item.name || '').trim()));
-      if (remainingAwards.length || (data.skills || []).length) {
+      if ((data.awards || []).length || (data.skills || []).length) {
         const s = section('奖项与技能');
         const grid = el('div', 'compact-grid');
-        if (remainingAwards.length) {
-          const col = el('div', 'compact-item');
-          remainingAwards.forEach(item => {
-            const row = el('div', 'award-line');
-            row.append(el('span', '', item.name), el('span', 'dates', item.date || ''));
-            col.append(row);
-          });
-          grid.append(col);
+        if ((data.awards || []).length) {
+          const row = el('div', 'compact-row');
+          row.append(el('div', 'compact-label', '奖项'));
+          const values = el('div', 'compact-values');
+          data.awards.forEach(item => values.append(el('span', 'compact-value', item.name + (item.date ? `（${item.date}）` : ''))));
+          row.append(values);
+          grid.append(row);
         }
         if ((data.skills || []).length) {
-          const list = el('div', 'skill-list compact-item');
-          data.skills.forEach(item => list.append(el('span', 'skill', item)));
-          grid.append(list);
+          const row = el('div', 'compact-row');
+          row.append(el('div', 'compact-label', '技能'));
+          const values = el('div', 'compact-values skill-list');
+          data.skills.forEach(item => values.append(el('span', 'compact-value', item)));
+          row.append(values);
+          grid.append(row);
         }
         s.append(grid);
       }

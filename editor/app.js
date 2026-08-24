@@ -1,7 +1,7 @@
 (() => {
   "use strict";
 
-  const TEMPLATE_URL = "../skills/sushen-resume-maker/assets/resume_template.html";
+  const TEMPLATE_URL = "../skills/sushen-resume-maker/assets/resume_template.html?v=20260824-awards-skills";
   const SAMPLE_URL = "sample.resume.json";
   const STORAGE_KEY = "sushen-resume-editor-v1";
   const HANDOFF_KEY = "sushen-evidence-handoff-v1";
