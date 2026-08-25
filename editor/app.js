@@ -1,7 +1,8 @@
 (() => {
   "use strict";
 
-  const TEMPLATE_URL = "../skills/sushen-resume-maker/assets/resume_template.html?v=20260825-company-logo";
+  const TEMPLATE_URL = "../skills/sushen-resume-maker/assets/resume_template.html?v=20260825-logo-catalog-v2";
+  const LOGO_CATALOG_URL = "../assets/company-logos/catalog.json?v=20260825-logo-catalog-v2";
   const SAMPLE_URL = "sample.resume.json";
   const STORAGE_KEY = "sushen-resume-editor-v1";
   const HANDOFF_KEY = "sushen-evidence-handoff-v1";
@@ -801,11 +802,12 @@
 
   async function init() {
     try {
-      const [templateResponse, sampleResponse] = await Promise.all([fetch(TEMPLATE_URL), fetch(SAMPLE_URL)]);
-      if (!templateResponse.ok || !sampleResponse.ok) throw new Error("编辑器资源加载失败");
-      templateHtml = await templateResponse.text();
-      sampleData = await sampleResponse.json();
-      if (!templateHtml.includes("__RESUME_JSON__")) throw new Error("ASU 模板缺少数据占位符");
+      const [templateResponse, logoResponse, sampleResponse] = await Promise.all([fetch(TEMPLATE_URL), fetch(LOGO_CATALOG_URL), fetch(SAMPLE_URL)]);
+      if (!templateResponse.ok || !logoResponse.ok || !sampleResponse.ok) throw new Error("编辑器资源加载失败");
+      const [templateSource, logoCatalog, loadedSample] = await Promise.all([templateResponse.text(), logoResponse.json(), sampleResponse.json()]);
+      templateHtml = templateSource.replace("__COMPANY_LOGO_CATALOG__", JSON.stringify(logoCatalog).replace(/<\//g, "<\\/"));
+      sampleData = loadedSample;
+      if (!templateHtml.includes("__RESUME_JSON__") || templateHtml.includes("__COMPANY_LOGO_CATALOG__")) throw new Error("ASU 模板缺少数据占位符或 Logo 库未注入");
       let navigationHandoff = null;
       if (/[?&]from=transform(?:&|$)/.test(window.location.search) && window.name) {
         try {

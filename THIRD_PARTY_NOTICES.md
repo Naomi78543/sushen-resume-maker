@@ -7,8 +7,11 @@ The browser-based document import feature also loads the following libraries fro
 - PDF.js / pdfjs-dist 6.1.200 (Apache-2.0) — https://github.com/mozilla/pdf.js
 - Tesseract.js 7.0.0 and matching OCR runtime (Apache-2.0) — https://github.com/naptha/tesseract.js
 - Mammoth.js 1.10.0 (BSD-2-Clause) — https://github.com/mwilliamson/mammoth.js
+- Simple Icons 16.28.0 (CC0-1.0) — https://github.com/simple-icons/simple-icons
 
 Their source code and license terms are available in the linked repositories. Candidate files are processed in the browser and are not sent to this project's server.
+
+Simple Icons brand marks and locally maintained company marks may be subject to the trademark and usage guidelines of their respective owners. Their inclusion identifies an employer named in the candidate's source resume and does not imply endorsement.
 
 ## Claycui828/ASu-resume-skills
 

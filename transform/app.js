@@ -1,7 +1,8 @@
 (() => {
   "use strict";
 
-  const TEMPLATE_URL = "../skills/sushen-resume-maker/assets/resume_template.html?v=20260825-company-logo";
+  const TEMPLATE_URL = "../skills/sushen-resume-maker/assets/resume_template.html?v=20260825-logo-catalog-v2";
+  const LOGO_CATALOG_URL = "../assets/company-logos/catalog.json?v=20260825-logo-catalog-v2";
   const EDITOR_STORAGE_KEY = "sushen-resume-editor-v1";
   const SOURCE_STORAGE_KEY = "sushen-source-resume-v1";
   const PDFJS_URL = "https://cdn.jsdelivr.net/npm/pdfjs-dist@6.1.200/build/pdf.min.mjs";
@@ -1459,11 +1460,13 @@
 
   async function init() {
     try {
-      const response = await fetch(TEMPLATE_URL);
-      if (!response.ok) throw new Error();
-      templateHtml = await response.text();
+      const [templateResponse, logoResponse] = await Promise.all([fetch(TEMPLATE_URL), fetch(LOGO_CATALOG_URL)]);
+      if (!templateResponse.ok || !logoResponse.ok) throw new Error();
+      const [templateSource, logoCatalog] = await Promise.all([templateResponse.text(), logoResponse.json()]);
+      templateHtml = templateSource.replace("__COMPANY_LOGO_CATALOG__", JSON.stringify(logoCatalog).replace(/<\//g, "<\\/"));
+      if (templateHtml.includes("__COMPANY_LOGO_CATALOG__")) throw new Error();
     } catch (_) {
-      showToast("A4 模板加载失败，请通过本地服务器或 GitHub Pages 打开", true);
+      showToast("A4 模板或公司 Logo 库加载失败，请刷新后重试", true);
     }
     const fileInput = $("fileInput");
     const dropzone = $("dropzone");

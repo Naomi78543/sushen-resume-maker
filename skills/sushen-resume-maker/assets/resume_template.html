@@ -265,25 +265,29 @@
           return ['http:', 'https:', 'mailto:'].includes(u.protocol) ? value : null;
         } catch (_) { return null; }
       };
-      const companyLogoMap = Object.freeze({
-        ByteDance: '../assets/company-logos/bytedance.svg',
-        Amazon: '../assets/company-logos/amazon.svg',
-        Tencent: '../assets/company-logos/tencent.svg',
-        Alibaba: '../assets/company-logos/alibaba.svg',
-        Meituan: '../assets/company-logos/meituan.svg',
-        Trip: '../assets/company-logos/trip.svg',
-        Tesla: '../assets/company-logos/tesla.svg'
-      });
+      const companyLogoCatalog = __COMPANY_LOGO_CATALOG__;
+      const companyLogoMap = Object.freeze(Object.fromEntries(
+        Object.entries(companyLogoCatalog.icons || {}).map(([key, item]) => [key, item.dataUrl])
+      ));
+      const normalizeLogoAlias = value => String(value || '')
+        .normalize('NFKC')
+        .toLowerCase()
+        .replace(/[\s·•|｜._()（）\-—–&]+/g, '');
+      const companyAliasRules = Object.entries(companyLogoCatalog.icons || {})
+        .flatMap(([key, item]) => (item.aliases || []).map(alias => ({ key, alias: normalizeLogoAlias(alias) })))
+        .filter(item => item.alias)
+        .sort((a, b) => b.alias.length - a.alias.length);
       const normalizeCompanyName = companyName => {
-        const value = String(companyName || '').trim().toLowerCase();
-        if (/字节|bytedance|tik\s*tok/.test(value)) return 'ByteDance';
-        if (/亚马逊|amazon/.test(value)) return 'Amazon';
-        if (/腾讯|tencent/.test(value)) return 'Tencent';
-        if (/阿里|alibaba|淘宝|天猫/.test(value)) return 'Alibaba';
-        if (/美团|meituan/.test(value)) return 'Meituan';
-        if (/携程|trip\s*\.\s*com|ctrip/.test(value)) return 'Trip';
-        if (/特斯拉|tesla/.test(value)) return 'Tesla';
-        return null;
+        const value = normalizeLogoAlias(companyName);
+        const exactAlias = companyAliasRules.find(item => value === item.alias);
+        if (exactAlias) return exactAlias.key;
+        const exactKey = Object.keys(companyLogoMap).find(key => normalizeLogoAlias(key) === value);
+        if (exactKey) return exactKey;
+        const matched = companyAliasRules.find(item => {
+          const hasCjk = /[\u3400-\u9fff]/.test(item.alias);
+          return (hasCjk ? item.alias.length >= 2 : item.alias.length >= 4) && value.includes(item.alias);
+        });
+        return matched ? matched.key : null;
       };
       const resolveCompanyLogo = companyName => {
         const normalized = normalizeCompanyName(companyName);
