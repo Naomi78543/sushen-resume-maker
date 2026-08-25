@@ -1,7 +1,7 @@
 (() => {
   "use strict";
 
-  const TEMPLATE_URL = "../skills/sushen-resume-maker/assets/resume_template.html?v=20260824-awards-skills";
+  const TEMPLATE_URL = "../skills/sushen-resume-maker/assets/resume_template.html?v=20260825-company-logo";
   const EDITOR_STORAGE_KEY = "sushen-resume-editor-v1";
   const SOURCE_STORAGE_KEY = "sushen-source-resume-v1";
   const PDFJS_URL = "https://cdn.jsdelivr.net/npm/pdfjs-dist@6.1.200/build/pdf.min.mjs";
@@ -702,6 +702,7 @@
     if (/腾讯|Tencent/i.test(value)) return "Tencent";
     if (/阿里|Alibaba|淘宝|天猫/i.test(value)) return "Alibaba";
     if (/美团|Meituan/i.test(value)) return "Meituan";
+    if (/携程|Trip\s*\.\s*com|Ctrip/i.test(value)) return "Trip";
     if (/Tesla|特斯拉/i.test(value)) return "Tesla";
     return "";
   }

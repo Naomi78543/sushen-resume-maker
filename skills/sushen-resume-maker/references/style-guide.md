@@ -21,7 +21,7 @@
 
 - 知名公司可在公司名称左侧展示 18–22px 本地 SVG Logo。
 - 使用 `companyNormalizedName` 进行别名归一化，显示名称仍使用 `company`。
-- Logo 只由 A4 模板中的 `companyLogoMap` 和 `resolveCompanyLogo()` 解析；找不到映射或加载失败时隐藏，不显示默认头像或破图。
+- Logo 只由 A4 模板中的 `companyLogoMap` 和 `resolveCompanyLogo()` 解析；当前支持 ByteDance、Amazon、Tencent、Alibaba、Meituan、Trip.com Group（携程）与 Tesla。找不到映射或加载失败时隐藏，不显示默认头像或破图。
 - Logo 仅增强扫读，不作为公司经历真实性证据。
 
 ## 专业名词密度

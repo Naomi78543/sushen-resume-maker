@@ -271,6 +271,7 @@
         Tencent: '../assets/company-logos/tencent.svg',
         Alibaba: '../assets/company-logos/alibaba.svg',
         Meituan: '../assets/company-logos/meituan.svg',
+        Trip: '../assets/company-logos/trip.svg',
         Tesla: '../assets/company-logos/tesla.svg'
       });
       const normalizeCompanyName = companyName => {
@@ -280,6 +281,7 @@
         if (/腾讯|tencent/.test(value)) return 'Tencent';
         if (/阿里|alibaba|淘宝|天猫/.test(value)) return 'Alibaba';
         if (/美团|meituan/.test(value)) return 'Meituan';
+        if (/携程|trip\s*\.\s*com|ctrip/.test(value)) return 'Trip';
         if (/特斯拉|tesla/.test(value)) return 'Tesla';
         return null;
       };
@@ -512,4 +514,3 @@
   </script>
 </body>
 </html>
-

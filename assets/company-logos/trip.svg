@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Trip.com Group">
+  <rect width="64" height="64" rx="13" fill="#287dfa"/>
+  <path d="M17 20h30v7H35v23h-7V27H17z" fill="#fff"/>
+  <path d="M14 42c8 6 28 6 36 0" fill="none" stroke="#70dcff" stroke-width="4" stroke-linecap="round"/>
+</svg>
