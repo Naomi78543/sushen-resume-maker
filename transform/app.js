@@ -34,6 +34,7 @@
   const wait = ms => new Promise(resolve => setTimeout(resolve, ms));
 
   let selectedFile = null;
+  let originalFileUrl = "";
   let templateHtml = "";
   let sourceResume = null;
   let optimizedResume = null;
@@ -54,6 +55,16 @@
 
   function clone(value) {
     return JSON.parse(JSON.stringify(value));
+  }
+
+  function escapeHtml(value) {
+    return String(value || "").replace(/[&<>"']/g, character => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", "\"": "&quot;", "'": "&#39;" })[character]);
+  }
+
+  function revokeOriginalFileUrl() {
+    if (!originalFileUrl) return;
+    URL.revokeObjectURL(originalFileUrl);
+    originalFileUrl = "";
   }
 
   function deepFreeze(value) {
@@ -1279,6 +1290,7 @@
   }
 
   function resetResumeState() {
+    revokeOriginalFileUrl();
     sourceResume = null;
     optimizedResume = null;
     extractedText = "";
@@ -1363,8 +1375,25 @@
     return templateHtml.replace("</style>", ".page{margin:0 auto;box-shadow:none}</style>").replace("__RESUME_JSON__", payload);
   }
 
+  function renderOriginalFilePreview() {
+    const frame = $("beforeFrame");
+    revokeOriginalFileUrl();
+    frame.removeAttribute("src");
+    frame.removeAttribute("srcdoc");
+    $("beforeFileName").textContent = selectedFile?.name || "用户上传的原始简历";
+    if (selectedFile && /\.pdf$/i.test(selectedFile.name)) {
+      originalFileUrl = URL.createObjectURL(selectedFile);
+      frame.src = originalFileUrl;
+      frame.title = `用户上传的 PDF 原文件：${selectedFile.name}`;
+      return;
+    }
+    const fileName = escapeHtml(selectedFile?.name || "原始 DOCX 简历");
+    frame.title = `用户上传的 DOCX 原文件：${selectedFile?.name || ""}`;
+    frame.srcdoc = `<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><style>html,body{height:100%;margin:0}body{display:grid;place-items:center;padding:44px;box-sizing:border-box;background:#f4f2ec;color:#243746;font:16px/1.7 system-ui,"Microsoft YaHei",sans-serif}.notice{max-width:520px;padding:28px;border:1px solid #d4d0c5;background:#fff;box-shadow:0 10px 30px rgba(0,0,0,.08)}h1{margin:0 0 12px;color:#245579;font:700 24px Georgia,"Songti SC",serif}p{margin:8px 0}.file{font-weight:800;word-break:break-all}.hint{color:#68737c;font-size:13px}</style></head><body><section class="notice"><h1>DOCX 原文件</h1><p class="file">${fileName}</p><p>Before 不套用酥神模板，也不使用解析后的 sourceResume 重新排版。</p><p class="hint">浏览器无法在离线静态页面中原样内嵌 DOCX。若需要视觉原稿对比，请将原简历另存为 PDF 后重新上传。</p></section></body></html>`;
+  }
+
   function renderFullComparison() {
-    $("beforeFrame").srcdoc = resumeHtml(sourceResume);
+    renderOriginalFilePreview();
     $("afterFrame").srcdoc = resumeHtml(optimizedResume);
     $("resultPositioning").textContent = buildPositioning(sourceResume).title;
     $("resultSection").classList.remove("hidden");
@@ -1487,8 +1516,8 @@
     });
     $("startButton").addEventListener("click", startTransform);
     $("editorButton").addEventListener("click", enterEditor);
+    window.addEventListener("beforeunload", revokeOriginalFileUrl);
   }
 
   init();
 })();
-

@@ -14,9 +14,9 @@ https://你的用户名.github.io/仓库名/
 
 工作台现在有三条清晰路径：
 
-1. **深度拷打**：适合素材不完整、需要追问能力与证据边界的用户；完成后把 Claim Ledger、JD Matrix 和面试防御带入编辑器。
-2. **一键酥神化**：适合已有 PDF / DOCX 简历的用户；浏览器本地解析文件，生成只读 sourceResume 与可编辑 optimizedResume，通过事实校验后查看前后对比并进入编辑器微调。
-3. **简历编辑器**：适合已有 `resume-data.json` 或需要继续细调的用户；实时预览 ASU 模板并导出 JSON、HTML 或 PDF。
+1. **一键酥神化**：适合已有 PDF / DOCX 简历的用户；浏览器本地解析文件，生成只读 sourceResume 与可编辑 optimizedResume，通过事实校验后查看前后对比并进入编辑器微调。
+2. **简历编辑器**：适合已有 `resume-data.json` 或需要继续细调的用户；实时预览 ASU 模板并导出 JSON、HTML 或 PDF。
+3. **深度拷打**：适合素材不完整、需要追问能力与证据边界的用户；完成后把 Claim Ledger、JD Matrix 和面试防御带入编辑器。
 
 当前的解析、同源结构重组和编辑都在浏览器中完成，不接入 AI API，也不会把候选人文件上传到项目服务器。
 
@@ -70,7 +70,7 @@ $CODEX_HOME/skills/sushen-resume-maker
 
 ## 在线深度拷打与编辑器
 
-仓库首页会自动进入 `interrogation/`。在线深度拷打台支持：
+仓库首页会自动进入 `transform/`；导航顺序固定为“一键酥神化 → 简历编辑器 → 深度拷打”。在线深度拷打台支持：
 
 - 输入目标 JD 与原始经历材料；
 - 上传 PDF、扫描版 PDF 或多张简历图片：PDF 优先提取原生文字，无文字页和图片使用中英文 OCR；
@@ -101,7 +101,7 @@ $CODEX_HOME/skills/sushen-resume-maker
 - 抽取基本信息、教育、经历、项目与技能；
 - 将原始事实保存为只读 sourceResume，将同源结构重组结果保存为可编辑 optimizedResume；
 - 校验公司、学校、岗位、项目、时间和数字，发现新增事实时阻止进入最终简历；
-- 查看完整 Before / After 和 ASU 模板预览；
+- 查看完整 Before / After：After 使用 ASU A4 模板，Before 直接嵌入用户上传的原始 PDF，不再把 sourceResume 套进另一份模板；DOCX 因浏览器无法保证原版排版还原，会明确提示用户改用 PDF 查看原貌；
 - 一键把结构化结果写入现有编辑器继续调整。
 - 先确认公司内项目边界和每条原始事实的归属，再按“背景 / 指标与效果 / 我的职责 / 技术关键词”重组 A4 经历；原始事实不按逗号切碎，缺失指标只在编辑器内提示；
 - 自动识别原文中的数字、GMV、CTR、CVR、SQL、AI Agent、SOP 等重点词，并允许在编辑器中手动增删；
@@ -242,4 +242,3 @@ python skills/sushen-resume-maker/scripts/validate_interview_defense.py \
 ## 许可证说明
 
 本项目以 [MIT License](LICENSE) 发布。生成与审计设计参考了 [Claycui828/ASu-resume-skills](https://github.com/Claycui828/ASu-resume-skills)，前端结构与模板约定参考了 [Hisn00w/ASu-skills](https://github.com/Hisn00w/ASu-skills)；两者均使用 MIT License，原始版权声明见 [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md)。
-

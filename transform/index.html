@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="description" content="上传完整简历，识别经历与候选人定位，重构为酥神风格的一页 A4 简历。">
   <title>一键酥神化｜Resume Rebuilder</title>
-  <link rel="stylesheet" href="styles.css?v=20260824-project-groups-2">
+  <link rel="stylesheet" href="styles.css?v=20260825-original-before">
 </head>
 <body>
   <header class="topbar">
@@ -14,9 +14,9 @@
       <div><h1>酥神简历工作台</h1><p>AI Resume Rebuilder · 整份简历重构</p></div>
     </div>
     <nav class="product-nav" aria-label="工作台功能">
-      <a href="../interrogation/">深度拷打</a>
       <a class="is-active" href="./">一键酥神化</a>
       <a href="../editor/">简历编辑器</a>
+      <a href="../interrogation/">深度拷打</a>
     </nav>
     <div class="privacy-badge"><span class="privacy-dot"></span>浏览器本地解析 · 不上传文件</div>
   </header>
@@ -168,8 +168,8 @@
 
     <section id="resultSection" class="result hidden" aria-labelledby="resultTitle">
       <header class="result-head">
-        <div><span class="eyebrow">FULL RESUME COMPARISON</span><h2 id="resultTitle">酥神化一页简历 VS 用户原始简历</h2><p>先展示已完成的酥神化简历，再展示只读 sourceResume；两份简历使用同一批事实。</p></div>
-        <span class="status safe">A4 · 210 × 297 mm</span>
+        <div><span class="eyebrow">FULL RESUME COMPARISON</span><h2 id="resultTitle">酥神化一页简历 VS 用户上传原文件</h2><p>先展示酥神化后的 A4 简历，再直接展示用户上传的 PDF 原文件；Before 不再套用任何简历模板。</p></div>
+        <span class="status safe">AFTER A4 · BEFORE 原文件</span>
       </header>
 
       <div class="a4-compare">
@@ -178,8 +178,8 @@
           <div class="a4-frame highlighted"><iframe id="afterFrame" title="酥神化一页简历 A4 预览" sandbox="allow-same-origin allow-scripts"></iframe></div>
         </article>
         <article>
-          <div class="paper-label"><span>BEFORE</span><strong>用户上传的原始简历</strong></div>
-          <div class="a4-frame"><iframe id="beforeFrame" title="用户原始简历 A4 预览" sandbox="allow-same-origin allow-scripts"></iframe></div>
+          <div class="paper-label"><span>BEFORE · ORIGINAL FILE</span><strong id="beforeFileName">用户上传的原始简历</strong></div>
+          <div class="a4-frame original-file"><iframe id="beforeFrame" title="用户上传的原始简历文件预览"></iframe></div>
         </article>
       </div>
 
@@ -203,7 +203,6 @@
   </main>
 
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
-  <script src="app.js?v=20260824-awards-skills" defer></script>
+  <script src="app.js?v=20260825-original-before" defer></script>
 </body>
 </html>
-
