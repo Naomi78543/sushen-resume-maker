@@ -1,7 +1,7 @@
 (() => {
   "use strict";
 
-  const TEMPLATE_URL = "../skills/sushen-resume-maker/assets/resume_template.html?v=20260825-logo-catalog-v2";
+  const TEMPLATE_URL = "../skills/sushen-resume-maker/assets/resume_template.html?v=20260826-experience-colors";
   const LOGO_CATALOG_URL = "../assets/company-logos/catalog.json?v=20260825-logo-catalog-v2";
   const SAMPLE_URL = "sample.resume.json";
   const STORAGE_KEY = "sushen-resume-editor-v1";
@@ -63,6 +63,7 @@
     next.education ||= [];
     next.experience ||= [];
     next.experience.forEach(exp => {
+      exp.brandMode ||= "auto";
       exp.links ||= exp.link ? [exp.link] : [];
       delete exp.link;
       (exp.projects || []).forEach(project => {
@@ -493,8 +494,9 @@
   }
 
   function renderExperience() {
-    editorPanel.append(element("p", { className: "panel-intro", text: "经历条颜色对应原 ASU 前端。新增数字或强角色词后，记得同步更新 Claim Ledger。" }));
+    editorPanel.append(element("p", { className: "panel-intro", text: "经历条默认按浅粉 → 浅灰 → 浅蓝自动轮换；也可以为单段经历手动指定颜色。" }));
     const brandChoices = [
+      { value: "auto", label: "自动轮换" },
       { value: "red", label: "浅红" },
       { value: "blue", label: "浅蓝" },
       { value: "green", label: "浅绿" },
@@ -509,7 +511,15 @@
         field("部门与岗位", exp.team, value => { exp.team = value; }),
         fieldGrid(
           field("时间", exp.dates, value => { exp.dates = value; }),
-          field("经历条颜色", exp.brand || "gray", value => { exp.brand = value; }, { type: "select", choices: brandChoices })
+          field("经历条颜色", exp.brandMode === "manual" ? (exp.brand || "gray") : "auto", value => {
+            if (value === "auto") {
+              exp.brand = "auto";
+              exp.brandMode = "auto";
+            } else {
+              exp.brand = value;
+              exp.brandMode = "manual";
+            }
+          }, { type: "select", choices: brandChoices })
         ),
         field("方向标签（逗号分隔）", exp.tags.join(", "), value => {
           exp.tags = value.split(/[,，]/).map(x => x.trim()).filter(Boolean);
@@ -520,7 +530,7 @@
       block.append(addButton("项目", () => exp.projects.push({ name: "", subtitle: "", background: [], impact: [], responsibilities: [], actions: [], keywords: [], missingMetrics: [] })));
       editorPanel.append(block);
     });
-    editorPanel.append(addButton("实习 / 工作经历", () => data.experience.push({ company: "", team: "", dates: "", brand: "gray", tags: [], links: [], projects: [] })));
+    editorPanel.append(addButton("实习 / 工作经历", () => data.experience.push({ company: "", team: "", dates: "", brand: "auto", brandMode: "auto", tags: [], links: [], projects: [] })));
   }
 
   function simpleProjectSection(title, items, openSource = false) {

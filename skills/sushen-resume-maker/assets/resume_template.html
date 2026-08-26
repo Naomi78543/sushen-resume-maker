@@ -18,10 +18,10 @@
       --ink-blue: #245579;
       --link-blue: #366f96;
       --paper: #fffefa;
-      --red-bar: #f8e8e3;
-      --blue-bar: #e5f1f5;
+      --red-bar: #fbefef;
+      --blue-bar: #eaf4fb;
       --green-bar: #eaf1e5;
-      --gray-bar: #efeee9;
+      --gray-bar: #f2f2f0;
       --serif: Georgia, "Noto Serif CJK SC", "Songti SC", STSong, serif;
       --sans: Inter, ui-sans-serif, system-ui, -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif;
       --mono: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
@@ -151,7 +151,15 @@
     .education-meta { margin-top: .8mm; color: var(--gray-700); font-size: 9.2px; }
     .dates { white-space: nowrap; color: var(--gray-700); font-family: var(--mono); font-size: 9.5px; }
 
-    .experience { margin-bottom: 4mm; break-inside: auto; }
+    .experience {
+      --experience-accent: #d77b84;
+      --experience-rule: #ebc6ca;
+      margin-bottom: 4mm;
+      break-inside: auto;
+    }
+    .experience.tone-gray { --experience-accent: #858d94; --experience-rule: #d8d9d7; }
+    .experience.tone-blue { --experience-accent: #4b9bc2; --experience-rule: #c6dfed; }
+    .experience.tone-green { --experience-accent: #788c5d; --experience-rule: #d1dfc7; }
     .company-bar {
       display: grid;
       grid-template-columns: minmax(0,1fr) auto;
@@ -159,13 +167,13 @@
       gap: 4mm;
       min-height: 8.2mm;
       padding: 1.6mm 3mm;
-      border-left: 4px solid var(--clay);
+      border-left: 4px solid var(--experience-accent);
       background: var(--red-bar);
       break-after: avoid;
     }
-    .company-bar.brand-blue { border-left-color: #4c8aa5; background: var(--blue-bar); }
-    .company-bar.brand-green { border-left-color: var(--olive); background: var(--green-bar); }
-    .company-bar.brand-gray { border-left-color: var(--gray-500); background: var(--gray-bar); }
+    .company-bar.brand-blue { background: var(--blue-bar); }
+    .company-bar.brand-green { background: var(--green-bar); }
+    .company-bar.brand-gray { background: var(--gray-bar); }
     .company-left { display: flex; align-items: center; min-width: 0; flex-wrap: wrap; gap: 1mm 2mm; }
     .company-logo {
       width: 20px;
@@ -183,7 +191,7 @@
 
     .project {
       padding: 2.2mm 2mm 0 3.4mm;
-      border-left: 1px solid var(--gray-300);
+      border-left: 1px solid var(--experience-rule);
       margin-left: 1.7mm;
       break-inside: avoid-page;
     }
@@ -438,9 +446,12 @@
 
       if ((data.experience || []).length) {
         const s = section('实习 / 工作经历');
-        data.experience.forEach(exp => {
-          const wrap = el('article', 'experience');
-          const bar = el('div', `company-bar brand-${['red','blue','green','gray'].includes(exp.brand) ? exp.brand : 'gray'}`);
+        const automaticExperienceTones = ['red', 'gray', 'blue'];
+        data.experience.forEach((exp, experienceIndex) => {
+          const manualTone = exp.brandMode === 'manual' && ['red','blue','green','gray'].includes(exp.brand) ? exp.brand : null;
+          const experienceTone = manualTone || automaticExperienceTones[experienceIndex % automaticExperienceTones.length];
+          const wrap = el('article', `experience tone-${experienceTone}`);
+          const bar = el('div', `company-bar brand-${experienceTone}`);
           const left = el('div', 'company-left');
           const logo = companyLogo(exp.companyNormalizedName || exp.company);
           if (logo) left.append(logo);

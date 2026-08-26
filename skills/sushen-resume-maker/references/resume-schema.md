@@ -114,7 +114,8 @@
   "companyNormalizedName": "ByteDance",
   "team": "Aily · 大模型应用算法",
   "dates": "2025.02 - 2026.06",
-  "brand": "blue",
+  "brand": "auto",
+  "brandMode": "auto",
   "tags": ["NL2SQL", "Search Agent", "Harness"],
   "links": [
     {"label": "作品集", "url": "https://example.com", "verification": "user_attested"}
@@ -143,5 +144,4 @@ A4 经历区按项目显示四层：`background` 映射为“背景”，`impact
 
 `companyNormalizedName` 为可选标准化公司名，只用于本地 Logo 匹配，不替代可见的真实公司名称。当前 A4 模板通过 `resolveCompanyLogo(companyNormalizedName || company)` 在本地 `companyLogoMap` 中匹配；找不到或资源加载失败时直接隐藏 Logo。不要把 Logo URL 写入简历正文，也不要因此改写公司事实。
 
-`brand` 只允许 `red`、`blue`、`green`、`gray`。`page_break_before: true` 仅影响 PDF 分页。
-
+`brandMode: "auto"` 时，A4 模板按经历顺序在浅粉、浅灰、浅蓝之间自动轮换；`brandMode: "manual"` 时才读取 `brand`，其值允许 `red`、`blue`、`green`、`gray`。缺少 `brandMode` 的旧数据按自动轮换处理。`page_break_before: true` 仅影响 PDF 分页。
