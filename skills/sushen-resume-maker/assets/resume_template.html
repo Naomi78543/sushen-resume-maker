@@ -6,7 +6,7 @@
   <title>ASU 风格技术简历</title>
   <style>
     :root {
-      --ivory: #faf9f5;
+      --ivory: #ffffff;
       --slate: #141413;
       --clay: #d97757;
       --oat: #e3dacc;
@@ -17,13 +17,13 @@
       --gray-700: #3d3d3a;
       --ink-blue: #245579;
       --link-blue: #366f96;
-      --paper: #fffefa;
+      --paper: #ffffff;
       --red-bar: #fbefef;
       --blue-bar: #eaf4fb;
       --green-bar: #eaf1e5;
       --gray-bar: #f2f2f0;
-      --serif: Georgia, "Noto Serif CJK SC", "Songti SC", STSong, serif;
-      --sans: Inter, ui-sans-serif, system-ui, -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif;
+      --serif: Georgia, "Songti SC", STSong, "Noto Serif CJK SC", "SimSun", serif;
+      --sans: "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Noto Sans CJK SC", "Source Han Sans SC", system-ui, -apple-system, sans-serif;
       --mono: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
     }
 
@@ -52,6 +52,65 @@
       background: var(--paper);
       box-shadow: 0 12px 36px rgba(20,20,19,.12);
     }
+    /* ===== 多页 A4 分页渲染(engine 脚本启用,sheet 变量由 page_setup 注入) ===== */
+    #resume.sushen-paged { display: block; margin: 0 auto; padding: 0; width: fit-content; min-height: 0; background: transparent; box-shadow: none; }
+    #resume.sushen-paged > .sushen-sheet {
+      display: block;
+      width: 210mm;
+      height: 297mm;
+      box-sizing: border-box;
+      margin: 0 auto 10mm;
+      padding: 0;
+      background: var(--paper);
+      box-shadow: 0 12px 36px rgba(20,20,19,.12);
+      overflow: hidden;
+    }
+    @media print {
+      #resume.sushen-paged { background: white; }
+      #resume.sushen-paged > .sushen-sheet { margin: 0; box-shadow: none; page-break-after: always; }
+      #resume.sushen-paged > .sushen-sheet:last-child { page-break-after: auto; }
+    }
+    .sushen-frame {
+      box-sizing: border-box;
+      width: 100%;
+      height: 100%;
+      padding: var(--sheet-pt, 12mm) var(--sheet-pr, 13mm) var(--sheet-pb, 13mm) var(--sheet-pl, 13mm);
+      display: flex;
+      flex-direction: column;
+    }
+    .sushen-head { flex: 0 0 auto; margin-bottom: 1.5mm; color: var(--gray-500); font-family: var(--sans); font-size: 8.2px; letter-spacing: .05em; }
+    .sushen-head:empty { display: none; }
+    .sushen-content { flex: 1 1 auto; min-height: 0; overflow: hidden; }
+    .sushen-foot {
+      flex: 0 0 auto; margin-top: 1.5mm; color: var(--gray-500);
+      font-family: var(--sans); font-size: 8.2px;
+      display: flex; justify-content: space-between; align-items: center;
+    }
+    .sushen-content > :first-child { margin-top: 0 !important; }
+    /* 仅在极少数 li 被当作叶子直接放入 content(脱离 ul.fact-list)时补缩进;常规 ul.fact-list li 不受影响 */
+    .sushen-content > li {
+      margin: 0 0 .65mm;
+      margin-left: 4.7mm;
+      padding-left: .5mm;
+      list-style: disc;
+    }
+    .sushen-content > li::marker { color: var(--gray-500); }
+    /* v6 连续流:节 wrapper 被展平,节前距交给标题;卡片/紧凑行被拆出后补偿原 grid gap */
+    .sushen-content .section-title { margin-top: 5mm; }
+    .sushen-content .card + .card { margin-top: 2.4mm; }
+    .sushen-content .compact-row + .compact-row { margin-top: 1.2mm; }
+    /* 【智能排版】紧凑档:引擎在换页前对该页内容按需收紧纵向间距(sushen-compact 加在当前页 .sushen-content),让二级板块尽量整体留在同页 */
+    .sushen-content.sushen-compact .section-title { margin-top: 3mm; margin-bottom: 1.6mm; }
+    .sushen-content.sushen-compact .education-row { padding: 1.4mm 3mm; }
+    .sushen-content.sushen-compact .education-row + .education-row { margin-top: 1.1mm; }
+    .sushen-content.sushen-compact .experience { margin-bottom: 2.4mm; }
+    .sushen-content.sushen-compact .company-bar { padding: 1.1mm 3mm; min-height: 7mm; }
+    .sushen-content.sushen-compact .project + .project { margin-top: 1.6mm; padding-top: 1.8mm; }
+    .sushen-content.sushen-compact .fact-block { margin-top: .7mm; }
+    .sushen-content.sushen-compact .fact-list li, .sushen-content.sushen-compact li,
+    .sushen-content.sushen-compact .fact-line { margin-bottom: .4mm; }
+    .sushen-content.sushen-compact .card + .card { margin-top: 1.5mm; }
+    .sushen-content.sushen-compact .compact-row + .compact-row { margin-top: .8mm; }
 
     .masthead {
       display: grid;
@@ -62,6 +121,24 @@
       border-bottom: 2px solid var(--ink-blue);
     }
     .masthead.has-photo { grid-template-columns: minmax(0,1fr) auto 26mm; align-items: center; }
+    .portfolio-line {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: baseline;
+      gap: 1.2mm 2.5mm;
+      padding: 2mm 0 2.4mm;
+      font-size: 9px;
+      line-height: 1.4;
+      color: var(--slate);
+    }
+    .portfolio-label {
+      font-weight: 800;
+      color: var(--ink-blue);
+      letter-spacing: .04em;
+    }
+    .portfolio-label::after { content: "："; }
+    .portfolio-link { color: var(--ink-blue); text-decoration: none; border-bottom: 1px solid rgba(36,85,121,.35); word-break: break-all; }
+    .portfolio-code { color: var(--gray-600); }
     .photo-frame {
       width: 26mm;
       height: 30mm;
@@ -199,9 +276,11 @@
     .project-title { font-family: var(--serif); font-size: 12px; font-weight: 850; color: #1f4d70; }
     .project-subtitle { margin-left: 2mm; color: var(--gray-700); font-weight: 650; }
 
-    .fact-block { display: grid; grid-template-columns: 19mm minmax(0,1fr); gap: 1.8mm; margin-top: 1.1mm; }
-    .fact-label { color: var(--ink-blue); font-weight: 800; white-space: nowrap; }
-    .fact-content { min-width: 0; }
+    /* 事实板块:标签与整段内容同行、顶格流动(非固定 label 列) */
+    .fact-block { margin-top: 1.1mm; }
+    .fact-block .fact-label { color: var(--slate); font-weight: 850; }
+    .fact-line { margin: 0 0 .55mm; white-space: pre-wrap; overflow-wrap: anywhere; }
+    .fact-line:last-child { margin-bottom: 0; }
     .fact-list { margin: 0; padding-left: 4.2mm; }
     .fact-list li { margin: 0 0 .65mm; padding-left: .5mm; }
     .fact-list li::marker { color: var(--gray-500); }
@@ -232,14 +311,35 @@
 
     .empty { color: var(--gray-500); font-style: italic; }
 
-    @page { size: A4; margin: 11mm 12mm 12mm; }
+    @page {
+      size: A4 portrait;
+      margin: 0;
+      @bottom-left { content: none; }
+      @bottom-center { content: none; }
+      @bottom-right { content: none; }
+      @top-left { content: none; }
+      @top-center { content: none; }
+      @top-right { content: none; }
+    }
     @media print {
       html, body { background: white; }
       body { font-size: 10.4px; }
-      .page { width: auto; min-height: auto; margin: 0; padding: 0; box-shadow: none; background: white; }
+      .page {
+        width: 210mm;
+        min-height: 297mm;
+        margin: 0;
+        padding: 12mm 13mm 13mm;
+        box-shadow: none;
+        background: white;
+        overflow: visible;
+      }
       a { color: inherit; border-bottom: 0; }
-      .company-bar, .education-row, .card { print-color-adjust: exact; -webkit-print-color-adjust: exact; }
-      .section-title, .company-bar, .project-title { break-after: avoid; }
+      .company-bar, .education-row, .card, .project, .compact-row {
+        print-color-adjust: exact;
+        -webkit-print-color-adjust: exact;
+        break-inside: avoid-page;
+      }
+      .section-title, .company-bar, .project-title { break-after: avoid-page; }
     }
 
     @media (max-width: 760px) {
@@ -261,10 +361,16 @@
       'use strict';
       const data = JSON.parse(document.getElementById('resume-data').textContent);
       const root = document.getElementById('resume');
+      // Strip invisible Unicode chars that PDF/OCR sometimes injects
+      // (ZWSP, ZWNJ, ZWJ, BOM, soft hyphen, line/paragraph separators, etc.)
+      const INVISIBLE_RE = /[\u0000-\u0008\u000B-\u001F\u007F-\u009F\u00AD\u034F\u061C\u115F\u1160\u17B4\u17B5\u180B-\u180F\u200B-\u200F\u2028\u2029\u202A-\u202E\u2060-\u206F\u3000\u303F\uFE00-\uFE0F\uFEFF\uFFF0-\uFFFF\uE000-\uF8FF]/g;
+      const cleanText = (s) => String(s == null ? '' : s)
+        .replace(/[\u3000\u303F\u205F\u00A0]/g, ' ')
+        .replace(INVISIBLE_RE, '');
       const el = (tag, cls, text) => {
         const node = document.createElement(tag);
         if (cls) node.className = cls;
-        if (text !== undefined && text !== null) node.textContent = String(text);
+        if (text !== undefined && text !== null) node.textContent = cleanText(text);
         return node;
       };
       const safeUrl = value => {
@@ -326,7 +432,7 @@
       };
       const richText = (item, extraHighlights) => {
         const source = typeof item === 'string' ? { text: item, highlights: [] } : (item || {});
-        const text = String(source.text || '');
+        const text = cleanText(source.text || '');
         const terms = [...new Set([...(source.highlights || []), ...(extraHighlights || []), ...autoHighlightTerms(text)].map(String).map(value => value.trim()).filter(Boolean))];
         const ranges = [];
         terms.forEach(term => {
@@ -362,6 +468,10 @@
         root.append(wrap);
         return wrap;
       };
+      const sectionTitle = (key, fallback) => {
+        const custom = (data.section_titles || {})[key];
+        return custom || fallback;
+      };
       const bulletList = (items, extraHighlights) => {
         const ul = el('ul', 'fact-list');
         (items || []).forEach(item => {
@@ -371,14 +481,30 @@
         });
         return ul;
       };
+      // 经历条目内三级小标题(用户可改名;缺省值回退)
+      const labels = Object.assign(
+        { background: '背景', impact: '指标与效果', responsibilities: '我的职责', keywords: '技术关键词' },
+        (data && data.labels) || {}
+      );
       const factBlock = (labelText, content, extraHighlights) => {
         const block = el('div', 'fact-block');
-        block.append(el('div', 'fact-label', labelText));
-        const body = el('div', 'fact-content');
-        if (Array.isArray(content)) body.append(bulletList(content, extraHighlights));
-        else if (content instanceof Node) body.append(content);
-        else body.textContent = content || '';
-        block.append(body);
+        const items = Array.isArray(content) ? content : (content == null ? [] : [content]);
+        if (!items.length) return block;
+        if (items[0] instanceof Node) {
+          // 特殊内容(如 keywords 节点):标签作行首引导,内容随其下自然流动
+          const lead = el('p', 'fact-line');
+          lead.append(el('span', 'fact-label', labelText));
+          block.append(lead);
+          block.append(items[0]);
+          return block;
+        }
+        const labelNode = el('span', 'fact-label', labelText);
+        items.forEach((item, index) => {
+          const line = el('p', 'fact-line');
+          if (index === 0) line.append(labelNode);
+          line.append(richText(item, extraHighlights));
+          block.append(line);
+        });
         return block;
       };
 
@@ -414,24 +540,119 @@
       }
       root.append(masthead);
 
-      if ((data.education || []).length) {
-        const s = section('教育经历');
-        data.education.forEach(item => {
-          const row = el('div', 'education-row');
-          const main = el('div', 'education-main');
-          const head = el('div', '');
-          head.append(el('span', 'education-school', item.institution));
-          head.append(el('span', 'education-program', [item.program, item.degree].filter(Boolean).join('｜')));
-          main.append(head);
-          const meta = [];
-          if (item.degree_awarder) meta.push(`学位授予方：${item.degree_awarder}`);
-          if (item.partner) meta.push(`合作方：${item.partner}（${item.partner_type || '合作类型未说明'}）`);
-          if (meta.length) main.append(el('div', 'education-meta', meta.join('；')));
-          if ((item.bullets || []).length) main.append(bulletList(item.bullets));
-          row.append(main, el('div', 'dates', item.dates || ''));
-          s.append(row);
-        });
+      // 作品集/网盘链接行:显示在头部区块正下方(分页引擎视其为独立叶子,随头部排第一页)
+      const portfolio = p.portfolio || {};
+      const portfolioUrl = portfolio.url ? String(portfolio.url).trim() : '';
+      if (portfolioUrl) {
+        const row = el('div', 'portfolio-line');
+        row.append(el('span', 'portfolio-label', '作品集'));
+        const a = link(portfolio.displayName ? String(portfolio.displayName) : portfolioUrl.replace(/^https?:\/\//, ''), portfolioUrl, 'portfolio-link');
+        row.append(a);
+        const portfolioCode = portfolio.code ? String(portfolio.code).trim() : '';
+        if (portfolioCode) row.append(el('span', 'portfolio-code', `提取码：${portfolioCode}`));
+        root.append(row);
       }
+
+      const renderBuiltInSection = (key, defaultTitle, renderer) => {
+        if (!(data[key] || []).length) return;
+        const s = section(sectionTitle(key, defaultTitle));
+        renderer(s);
+      };
+
+      // Render education & experience in layout order
+      const builtInRenderers = {
+        education: s => {
+          data.education.forEach(item => {
+            const row = el('div', 'education-row');
+            const main = el('div', 'education-main');
+            const head = el('div', '');
+            head.append(el('span', 'education-school', item.institution));
+            head.append(el('span', 'education-program', [item.program, item.degree].filter(Boolean).join('｜')));
+            main.append(head);
+            const meta = [];
+            if (item.degree_awarder) meta.push(`学位授予方：${item.degree_awarder}`);
+            if (item.partner) meta.push(`合作方：${item.partner}（${item.partner_type || '合作类型未说明'}）`);
+            if (meta.length) main.append(el('div', 'education-meta', meta.join('；')));
+            if ((item.bullets || []).length) main.append(bulletList(item.bullets));
+            row.append(main, el('div', 'dates', item.dates || ''));
+            s.append(row);
+          });
+        },
+        experience: s => {
+          const automaticExperienceTones = ['red', 'gray', 'blue'];
+          data.experience.forEach((exp, experienceIndex) => {
+            const manualTone = exp.brandMode === 'manual' && ['red','blue','green','gray'].includes(exp.brand) ? exp.brand : null;
+            const experienceTone = manualTone || automaticExperienceTones[experienceIndex % automaticExperienceTones.length];
+            const wrap = el('article', `experience tone-${experienceTone}`);
+            const bar = el('div', `company-bar brand-${experienceTone}`);
+            const left = el('div', 'company-left');
+            const logo = companyLogo(exp.companyNormalizedName || exp.company);
+            if (logo) left.append(logo);
+            left.append(el('span', 'company-name', exp.company));
+            if (exp.team) left.append(el('span', 'company-team', `｜${exp.team}`));
+            const experienceLinks = [...(exp.links || []), ...(exp.link ? [exp.link] : [])].filter(item => item && item.url && allowedVerification(item.verification || 'user_attested'));
+            experienceLinks.forEach(item => left.append(link(item.label || '作品链接', item.url, 'company-link')));
+            if ((exp.tags || []).length) left.append(el('span', 'company-tags', `｜${exp.tags.join(' · ')}`));
+            const right = el('div', 'company-right');
+            right.append(el('span', 'dates', exp.dates || ''));
+            bar.append(left, right);
+            wrap.append(bar);
+            (exp.projects || []).forEach(project => {
+              const block = el('div', 'project');
+              const title = el('div', '');
+              title.append(el('span', 'project-title', project.name));
+              if (project.subtitle) title.append(el('span', 'project-subtitle', `— ${project.subtitle}`));
+              block.append(title);
+              if ((project.background || []).length) block.append(factBlock(labels.background + '：', project.background));
+              const responsibilityItems = [...(project.responsibilities || []), ...(project.actions || [])];
+              if ((project.impact || []).length) block.append(factBlock(labels.impact + '：', project.impact));
+              if (responsibilityItems.length) block.append(factBlock(labels.responsibilities + '：', responsibilityItems));
+              if ((project.keywords || []).length) block.append(factBlock(labels.keywords + '：', el('div', 'keywords', project.keywords.join(' / '))));
+              wrap.append(block);
+            });
+            s.append(wrap);
+          });
+        }
+      };
+
+      (data.layout || [{ key: 'education' }, { key: 'experience' }]).forEach(layoutItem => {
+        if (!layoutItem || typeof layoutItem !== 'object') return;
+        const key = layoutItem.key;
+        const defaults = { education: '教育经历', experience: '实习 / 工作经历' };
+        
+        if (builtInRenderers[key]) {
+          renderBuiltInSection(key, defaults[key], builtInRenderers[key]);
+        } else if (key && key.startsWith('custom-')) {
+          // Custom section reference
+          const idx = parseInt(key.slice(7), 10);
+          if (!isNaN(idx) && data.sections && data.sections[idx]) {
+            const sectionData = data.sections[idx];
+            const customTitle = sectionData.title || `自定义栏目 ${idx + 1}`;
+            const customItems = Array.isArray(sectionData.items) ? sectionData.items : [];
+            if (customTitle || customItems.length) {
+              const s = section(sectionTitle('custom', customTitle));
+              if (!customItems.length) {
+                s.append(el('div', 'empty', '（暂无条目）'));
+              } else {
+                const cards = el('div', 'cards');
+                customItems.forEach(item => {
+                  const source = (item && typeof item === 'object') ? item : { title: item };
+                  const customCard = el('article', 'card');
+                  const main = el('div', '');
+                  const heading = el('div', '');
+                  heading.append(el('span', 'card-title', source.title || '未命名条目'));
+                  if (source.dates) heading.append(el('span', 'card-role', `｜${source.dates}`));
+                  main.append(heading);
+                  if ((source.bullets || []).filter(Boolean).length) main.append(bulletList(source.bullets));
+                  customCard.append(main);
+                  cards.append(customCard);
+                });
+                s.append(cards);
+              }
+            }
+          }
+        }
+      });
 
       const positioningSummary = p.summary && p.summary.text && allowedVerification(p.summary.verification) ? p.summary : null;
       if (positioningSummary) {
@@ -442,43 +663,6 @@
         body.append(paragraph);
         summary.append(body);
         root.append(summary);
-      }
-
-      if ((data.experience || []).length) {
-        const s = section('实习 / 工作经历');
-        const automaticExperienceTones = ['red', 'gray', 'blue'];
-        data.experience.forEach((exp, experienceIndex) => {
-          const manualTone = exp.brandMode === 'manual' && ['red','blue','green','gray'].includes(exp.brand) ? exp.brand : null;
-          const experienceTone = manualTone || automaticExperienceTones[experienceIndex % automaticExperienceTones.length];
-          const wrap = el('article', `experience tone-${experienceTone}`);
-          const bar = el('div', `company-bar brand-${experienceTone}`);
-          const left = el('div', 'company-left');
-          const logo = companyLogo(exp.companyNormalizedName || exp.company);
-          if (logo) left.append(logo);
-          left.append(el('span', 'company-name', exp.company));
-          if (exp.team) left.append(el('span', 'company-team', `｜${exp.team}`));
-          const experienceLinks = [...(exp.links || []), ...(exp.link ? [exp.link] : [])].filter(item => item && item.url && allowedVerification(item.verification || 'user_attested'));
-          experienceLinks.forEach(item => left.append(link(item.label || '作品链接', item.url, 'company-link')));
-          if ((exp.tags || []).length) left.append(el('span', 'company-tags', `｜${exp.tags.join(' · ')}`));
-          const right = el('div', 'company-right');
-          right.append(el('span', 'dates', exp.dates || ''));
-          bar.append(left, right);
-          wrap.append(bar);
-          (exp.projects || []).forEach(project => {
-            const block = el('div', 'project');
-            const title = el('div', '');
-            title.append(el('span', 'project-title', project.name));
-            if (project.subtitle) title.append(el('span', 'project-subtitle', `— ${project.subtitle}`));
-            block.append(title);
-            if ((project.background || []).length) block.append(factBlock('背景：', project.background));
-            const responsibilityItems = [...(project.responsibilities || []), ...(project.actions || [])];
-            if ((project.impact || []).length) block.append(factBlock('指标与效果：', project.impact));
-            if (responsibilityItems.length) block.append(factBlock('我的职责：', responsibilityItems));
-            if ((project.keywords || []).length) block.append(factBlock('技术关键词：', el('div', 'keywords', project.keywords.join(' / '))));
-            wrap.append(block);
-          });
-          s.append(wrap);
-        });
       }
 
       const renderCards = (title, items, isOpenSource) => {
@@ -525,6 +709,164 @@
         s.append(grid);
       }
 
+    })();
+  </script>
+  <script>
+    // ===== A4 多页分页引擎 (sushen paged engine v6 · flow) =====
+    // 读取 resume-data.page_setup;把模板渲染内容按“文档序”连续流式装进多张 210x297mm A4 sheet。
+    // v6 关键改动:不再把整节 wrapper 当一个页流单元(那样一节放不下整节就整节换页,造成“每板块
+    // 单开一页 + 大片留白 + 不连贯”)。改为把 section/.cards/.compact-grid 展平成叶子
+    // (education-row/experience/card/compact-row/h2…) 按文档顺序尽量填满每页,放不下的叶子
+    // 整体去下一页;同一节的内容可以跨页续排,节标题不会孤悬页尾。预览/HTML/PDF 共用本模板。
+    (function () {
+      'use strict';
+      var rawEl = document.getElementById('resume-data');
+      if (!rawEl) return;
+      var data = null;
+      try { data = JSON.parse(rawEl.textContent); } catch (_) { return; }
+      // 门控:仅当数据显式带 page_setup 才启用多页引擎。editor 经 normalizeData 恒注入
+      // 默认 page_setup,故其预览/下载/导出恒分页;而 transform 等直连模板的数据没有该字段,
+      // 保持原有单页 .page 渲染(避免无 page_setup 的 HTML 被静默改成带页码的分页)。
+      if (!data || typeof data.page_setup !== 'object' || data.page_setup === null || Array.isArray(data.page_setup)) return;
+      var rawSetup = data.page_setup || {};
+      var num = function (v, d) { v = Number(v); return isFinite(v) ? Math.min(60, Math.max(0, v)) : d; };
+      var setup = {
+        marginTopMm: num(rawSetup.marginTopMm, 12),
+        marginBottomMm: num(rawSetup.marginBottomMm, 13),
+        marginLeftMm: num(rawSetup.marginLeftMm, 13),
+        marginRightMm: num(rawSetup.marginRightMm, 13),
+        headerText: rawSetup.headerText || '',
+        footerText: rawSetup.footerText || '',
+        showPageNumbers: rawSetup.showPageNumbers !== false,
+        smart: rawSetup.smartPacking === true
+      };
+      var host = document.getElementById('resume');
+      if (!host || !host.firstElementChild) return;
+
+      // ---- 叶子化:把内容容器(section wrapper / .cards / .compact-grid)展平成叶子单元,
+      // 叶子 = 不可再拆的排版块(标题/教育行/经历/卡片/奖项技能行/摘要/masthead)。
+      // 保持文档顺序,叶子之间原有相邻 margin 由模板 CSS 提供,跨页续排时自然衔接。
+      var leafUnits = [];
+      function flattenNode(node) {
+        if (!node) return;
+        var cls = ' ' + (node.className || '') + ' ';
+        if (node.children && node.children.length && /(^|\s)(section|cards|compact-grid)(\s|$)/.test(cls)) {
+          Array.prototype.slice.call(node.children).forEach(function (child) { flattenNode(child); });
+          return;
+        }
+        leafUnits.push(node);
+      }
+      Array.prototype.slice.call(host.children).forEach(flattenNode);
+      if (!leafUnits.length) return;
+
+      function mm(v) { return Number(v || 0) + 'mm'; }
+      function buildSheet() {
+        var sheet = document.createElement('main');
+        sheet.className = 'sushen-sheet';
+        sheet.style.setProperty('--sheet-pt', mm(setup.marginTopMm));
+        sheet.style.setProperty('--sheet-pr', mm(setup.marginRightMm));
+        sheet.style.setProperty('--sheet-pb', mm(setup.marginBottomMm));
+        sheet.style.setProperty('--sheet-pl', mm(setup.marginLeftMm));
+        var frame = document.createElement('div'); frame.className = 'sushen-frame';
+        var head = document.createElement('header'); head.className = 'sushen-head';
+        if (setup.headerText) head.textContent = setup.headerText;
+        var content = document.createElement('div'); content.className = 'sushen-content';
+        var foot = document.createElement('footer'); foot.className = 'sushen-foot';
+        var ft = document.createElement('span'); ft.className = 'sushen-foot-text';
+        if (setup.footerText) ft.textContent = setup.footerText;
+        var pg = document.createElement('span'); pg.className = 'sushen-pager';
+        if (setup.showPageNumbers) pg.textContent = '';
+        foot.append(ft, pg);
+        frame.append(head, content, foot);
+        sheet.append(frame);
+        return { sheet: sheet, content: content, pg: pg };
+      }
+
+      host.classList.add('sushen-paged');
+      host.removeAttribute('style');
+      var page = buildSheet();
+      host.append(page.sheet);
+
+      function newPage() {
+        page = buildSheet();
+        host.append(page.sheet);
+      }
+      // 用叶子自身的几何位置判断是否越过本页内容区(比 scrollHeight 抗 margin 塌陷更直观)
+      function leafFits(leaf) {
+        var contentRect = page.content.getBoundingClientRect();
+        var rect = leaf.getBoundingClientRect();
+        // 容差约 1mm(96dpi ≈ 3.78px),避免亚毫米余量导致整块换页/标题搬走
+        return rect.bottom - contentRect.top <= contentRect.height + 4;
+      }
+      // 从当前页撤下叶子(含孤悬标题)的辅助
+      function pullLast() {
+        var last = page.content.lastElementChild;
+        if (last) page.content.removeChild(last);
+        return last;
+      }
+
+      var pendingTitle = null; // 刚放到页尾的节标题,若其后第一块放不下则随块去下一页
+      leafUnits.forEach(function (leaf) {
+        var cls = ' ' + (leaf.className || '') + ' ';
+        if (/(^|\s)section-title(\s|$)/.test(cls)) {
+          // 标题也先放入当前页再测量(与普通叶一致,坐标系为当前页 content);
+          // 放不下说明当前页已满,标题与后续内容一起去下一页,避免孤悬页尾。
+          page.content.append(leaf);
+          if (!leafFits(leaf)) {
+            page.content.removeChild(leaf);
+            newPage();
+            page.content.append(leaf);
+          }
+          pendingTitle = leaf;
+          return;
+        }
+        // 普通叶子
+        page.content.append(leaf);
+        if (leafFits(leaf)) { pendingTitle = null; return; }
+        // 放不下:【智能排版】对该页做一次单档压缩再试放(把板块整体留下);压缩是整页级且只试一档,
+        // 仍不行则换页——避免多重压缩把版面压得过紧或无限重试
+        page.content.removeChild(leaf);
+        if (setup.smart && !page.content.classList.contains('sushen-compact')) {
+          page.content.classList.add('sushen-compact');
+          page.content.append(leaf);
+          if (leafFits(leaf)) { pendingTitle = null; return; }
+          page.content.removeChild(leaf);
+        }
+        // 换页:先把刚放的和可能孤悬的标题都撤下
+        var titleMoved = null;
+        var last = page.content.lastElementChild;
+        if (pendingTitle && last === pendingTitle) {
+          page.content.removeChild(pendingTitle);
+          titleMoved = pendingTitle;
+        }
+        newPage();
+        if (titleMoved) page.content.append(titleMoved);
+        page.content.append(leaf);
+        if (!leafFits(leaf)) {
+          // 空页仍放不下 → 单叶子超高(极少):叶子是二级板块保持完整,打溢出标记并裁切兜底
+          page.content.removeChild(leaf);
+          page.content.append(leaf);
+          page.sheet.classList.add('sushen-overflow');
+        }
+        pendingTitle = null;
+      });
+
+      // 清掉被掏空的容器残壳(masthead/section/.cards 等),避免页面上方残留空隙
+      Array.prototype.slice.call(host.children).forEach(function (child) {
+        var cls = child.className || '';
+        if (cls.indexOf('sushen-sheet') === -1) child.remove();
+      });
+
+      // 页码回填 + 空页脚隐藏
+      var sheets = Array.prototype.slice.call(host.querySelectorAll(':scope > .sushen-sheet'));
+      var total = sheets.length;
+      sheets.forEach(function (sh, idx) {
+        var pager = sh.querySelector('.sushen-pager');
+        if (pager && setup.showPageNumbers) pager.textContent = '第 ' + (idx + 1) + ' 页 · 共 ' + total + ' 页';
+        var foot = sh.querySelector('.sushen-foot');
+        var ftEl = sh.querySelector('.sushen-foot-text');
+        if (foot && !setup.showPageNumbers && !(ftEl && ftEl.textContent)) foot.style.display = 'none';
+      });
     })();
   </script>
 </body>
