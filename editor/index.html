@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="description" content="在浏览器本地编辑酥神 ASU 风格简历，并重新导出 JSON、HTML 与 PDF。">
   <title>酥神简历在线编辑器</title>
-  <link rel="stylesheet" href="styles.css?v=20260825-evidence-pipeline">
+  <link rel="stylesheet" href="styles.css?v=20260905-portfolio-line">
 </head>
 <body>
   <header class="topbar">
@@ -31,6 +31,7 @@
     <div class="action-group">
       <button id="importButton" class="button primary" type="button">导入 JSON</button>
       <button id="loadSampleButton" class="button" type="button">载入示例</button>
+      <button id="cleanDraftButton" class="button" type="button" title="清洗 OCR/PDF 提取产生的不可见字符、私有区字符、变体选择符等">清洗脏字符</button>
       <input id="fileInput" type="file" accept="application/json,.json" hidden>
     </div>
     <div class="action-group">
@@ -41,7 +42,8 @@
     <div class="action-group export-group">
       <button id="downloadJsonButton" class="button" type="button">下载 JSON</button>
       <button id="downloadHtmlButton" class="button" type="button">下载 HTML</button>
-      <button id="printButton" class="button accent" type="button">打印 / 导出 PDF</button>
+      <button id="downloadPngButton" class="button" type="button">导出 PNG</button>
+      <button id="exportPdfButton" class="button accent" type="button" title="直接下载 A4 PDF：预览先渲染为 PNG，再无损转换为 PDF，无需打印对话框">导出 PDF</button>
     </div>
   </nav>
 
@@ -59,6 +61,7 @@
         <button class="tab is-active" type="button" data-tab="profile" role="tab">基本信息</button>
         <button class="tab" type="button" data-tab="education" role="tab">教育</button>
         <button class="tab" type="button" data-tab="experience" role="tab">经历</button>
+        <button class="tab" type="button" data-tab="sections" role="tab">栏目管理</button>
         <button class="tab" type="button" data-tab="extras" role="tab">项目技能</button>
         <button class="tab" type="button" data-tab="interrogation" role="tab">拷打结果</button>
         <button class="tab" type="button" data-tab="json" role="tab">JSON</button>
@@ -82,7 +85,26 @@
               <option value="1">100%</option>
             </select>
           </label>
+          <button id="smartLayoutButton" class="button" type="button" aria-pressed="false" title="手动触发：收紧纵向间距重新排版，让二级板块尽量完整留在同一页">智能排版</button>
+          <button id="pageSetupToggle" class="button" type="button" aria-expanded="false" aria-controls="pageSetupPanel">页面设置</button>
         </div>
+      </div>
+      <div id="pageSetupPanel" class="page-setup-panel" hidden>
+        <div class="setup-group">
+          <span class="setup-label">页边距 (mm)</span>
+          <label>上 <input id="setupMarginTop" class="setup-input" type="number" min="0" max="60" step="1" value="12"></label>
+          <label>下 <input id="setupMarginBottom" class="setup-input" type="number" min="0" max="60" step="1" value="13"></label>
+          <label>左 <input id="setupMarginLeft" class="setup-input" type="number" min="0" max="60" step="1" value="13"></label>
+          <label>右 <input id="setupMarginRight" class="setup-input" type="number" min="0" max="60" step="1" value="13"></label>
+        </div>
+        <label class="setup-field">页眉文本
+          <input id="setupHeaderText" class="setup-input wide" type="text" placeholder="每页顶部文字（可留空）">
+        </label>
+        <label class="setup-field">页脚文本
+          <input id="setupFooterText" class="setup-input wide" type="text" placeholder="每页底部文字（可留空）">
+        </label>
+        <label class="setup-check"><input id="setupPageNumbers" type="checkbox" checked> 显示页码（页脚右侧「第 X 页 · 共 Y 页」）</label>
+        <p class="setup-hint">内容超过一张 A4 时自动分页到下一张；页边距 / 页眉 / 页脚统一应用于所有页，预览与导出一致。</p>
       </div>
       <div id="previewViewport" class="preview-viewport">
         <iframe id="previewFrame" title="ASU 简历预览" sandbox="allow-same-origin allow-scripts allow-modals"></iframe>
@@ -91,6 +113,7 @@
   </main>
 
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
-  <script src="app.js?v=20260826-experience-colors" defer></script>
+  <script src="pdf.js?v=20260905-portfolio-line" defer></script>
+  <script src="app.js?v=20260905-portfolio-line" defer></script>
 </body>
 </html>
