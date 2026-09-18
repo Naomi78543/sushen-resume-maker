@@ -6,7 +6,7 @@
   <title>ASU 风格技术简历</title>
   <style>
     :root {
-      --ivory: #faf9f5;
+      --ivory: #ffffff;
       --slate: #141413;
       --clay: #d97757;
       --oat: #e3dacc;
@@ -17,13 +17,13 @@
       --gray-700: #3d3d3a;
       --ink-blue: #245579;
       --link-blue: #366f96;
-      --paper: #fffefa;
+      --paper: #ffffff;
       --red-bar: #fbefef;
       --blue-bar: #eaf4fb;
       --green-bar: #eaf1e5;
       --gray-bar: #f2f2f0;
-      --serif: Georgia, "Noto Serif CJK SC", "Songti SC", STSong, serif;
-      --sans: Inter, ui-sans-serif, system-ui, -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif;
+      --serif: Georgia, "Songti SC", STSong, "Noto Serif CJK SC", "SimSun", serif;
+      --sans: "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Noto Sans CJK SC", "Source Han Sans SC", system-ui, -apple-system, sans-serif;
       --mono: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
     }
 
@@ -52,16 +52,129 @@
       background: var(--paper);
       box-shadow: 0 12px 36px rgba(20,20,19,.12);
     }
+    /* ===== 多页 A4 分页渲染(engine 脚本启用,sheet 变量由 page_setup 注入) ===== */
+    #resume.sushen-paged { display: block; margin: 0 auto; padding: 0; width: fit-content; min-height: 0; background: transparent; box-shadow: none; }
+    #resume.sushen-paged > .sushen-sheet {
+      display: block;
+      width: 210mm;
+      height: 297mm;
+      box-sizing: border-box;
+      margin: 0 auto 10mm;
+      padding: 0;
+      background: var(--paper);
+      box-shadow: 0 12px 36px rgba(20,20,19,.12);
+      overflow: hidden;
+    }
+    @media print {
+      #resume.sushen-paged { background: white; }
+      #resume.sushen-paged > .sushen-sheet { margin: 0; box-shadow: none; page-break-after: always; }
+      #resume.sushen-paged > .sushen-sheet:last-child { page-break-after: auto; }
+    }
+    .sushen-frame {
+      box-sizing: border-box;
+      width: 100%;
+      height: 100%;
+      padding: var(--sheet-pt, 12mm) var(--sheet-pr, 13mm) var(--sheet-pb, 13mm) var(--sheet-pl, 13mm);
+      display: flex;
+      flex-direction: column;
+    }
+    .sushen-head { flex: 0 0 auto; margin-bottom: 1.5mm; color: var(--gray-500); font-family: var(--sans); font-size: 8.2px; letter-spacing: .05em; }
+    .sushen-head:empty { display: none; }
+    .sushen-content { flex: 1 1 auto; min-height: 0; overflow: hidden; }
+    .sushen-foot {
+      flex: 0 0 auto; margin-top: 1.5mm; color: var(--gray-500);
+      font-family: var(--sans); font-size: 8.2px;
+      display: flex; justify-content: space-between; align-items: center;
+    }
+    .sushen-content > :first-child { margin-top: 0 !important; }
+    /* 仅在极少数 li 被当作叶子直接放入 content(脱离 ul.fact-list)时补缩进;常规 ul.fact-list li 不受影响 */
+    .sushen-content > li {
+      margin: 0 0 .65mm;
+      margin-left: 4.7mm;
+      padding-left: .5mm;
+      list-style: disc;
+    }
+    .sushen-content > li::marker { color: var(--gray-500); }
+    /* 二级内容字号/行距(用户可调):作用于各栏目的内容条目行(事实/要点/职责 li 与事实导出行)。
+       变量由 data.page_setup.contentFontSize / contentLineHeight 注入;未设置时回退 inherit(现状不变)。
+       栏目标题、公司/项目名、日期、头部等不随动。 */
+    .sushen-content .fact-list li,
+    .sushen-content > li,
+    .sushen-content .fact-lead,
+    .sushen-content .fact-line {
+      font-size: var(--content-fs, inherit);
+      line-height: var(--content-lh, inherit);
+    }
+    /* v6 连续流:节 wrapper 被展平,节前距交给标题;卡片/紧凑行被拆出后补偿原 grid gap */
+    .sushen-content .section-title { margin-top: 5mm; }
+    .sushen-content .card + .card { margin-top: 2.4mm; }
+    .sushen-content .compact-row + .compact-row { margin-top: 1.2mm; }
+    /* 【智能排版】紧凑档:引擎在换页前对该页内容按需收紧纵向间距(sushen-compact 加在当前页 .sushen-content),让二级板块尽量整体留在同页 */
+    .sushen-content.sushen-compact .section-title { margin-top: 3mm; margin-bottom: 1.6mm; }
+    /* 【智能排版】左右内容对齐(点击按钮全局生效):基本信息 信息/照片 垂直居中于卡片;
+       教育行/公司行 让右列(日期/时间)与整行垂直居中对齐 */
+    .sushen-smart .masthead { align-items: center; }
+    .sushen-smart .education-row { align-items: center; }
+    .sushen-smart .education-main { align-items: center; }
+    .sushen-smart .company-bar { align-items: center; }
+    .sushen-content.sushen-compact .education-row { padding: 1.4mm 3mm; }
+    .sushen-content.sushen-compact .education-row + .education-row { margin-top: 1.1mm; }
+    .sushen-content.sushen-compact .experience { margin-bottom: 2.4mm; }
+    .sushen-content.sushen-compact .company-bar { padding: 1.1mm 3mm; min-height: 7mm; }
+    .sushen-content.sushen-compact .project + .project { margin-top: 1.6mm; padding-top: 1.8mm; }
+    .sushen-content.sushen-compact .fact-block { margin-top: .7mm; }
+    .sushen-content.sushen-compact .fact-list li { margin-bottom: .4mm; }
+    .sushen-content.sushen-compact .card + .card { margin-top: 1.5mm; }
+    .sushen-content.sushen-compact .compact-row + .compact-row { margin-top: .8mm; }
 
+    /* 头部信息卡(参考 vibe-resume 头部):白底卡片 + 顶部深色粗条 + 左侧信息/右侧照片 */
     .masthead {
       display: grid;
-      grid-template-columns: 1fr auto;
-      gap: 8mm;
-      align-items: end;
-      padding-bottom: 5mm;
-      border-bottom: 2px solid var(--ink-blue);
+      grid-template-columns: minmax(0, 1fr);
+      gap: 6mm 8mm;
+      align-items: center;
+      margin-bottom: 4.5mm;
+      position: relative;
     }
-    .masthead.has-photo { grid-template-columns: minmax(0,1fr) auto 26mm; align-items: center; }
+    .masthead.has-photo { grid-template-columns: minmax(0, 1fr) auto; align-items: center; }
+    .name-row { display: flex; flex-wrap: wrap; align-items: center; gap: 3mm 5mm; min-height: 8.5mm; }
+    .masthead-eyebrow {
+      margin: 0 0 0 auto;
+      color: #475467;
+      font-size: 9.5px;
+      font-weight: 800;
+      letter-spacing: .18em;
+      line-height: 1.3;
+      text-transform: uppercase;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .masthead-eyebrow.free {
+      position: absolute;
+      margin: 0;
+      max-width: 70%;
+      overflow: visible;
+      text-overflow: clip;
+    }
+    .portfolio-line {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: baseline;
+      gap: 1.2mm 2.5mm;
+      padding: 2mm 0 2.4mm;
+      font-size: 9px;
+      line-height: 1.4;
+      color: var(--slate);
+    }
+    .portfolio-label {
+      font-weight: 800;
+      color: var(--ink-blue);
+      letter-spacing: .04em;
+    }
+    .portfolio-label::after { content: "："; }
+    .portfolio-link { color: var(--ink-blue); text-decoration: none; border-bottom: 1px solid rgba(36,85,121,.35); word-break: break-all; }
+    .portfolio-code { color: var(--gray-600); }
     .photo-frame {
       width: 26mm;
       height: 30mm;
@@ -74,35 +187,46 @@
 
     .name {
       margin: 0;
-      font-family: var(--serif);
-      font-size: 28px;
-      line-height: 1;
-      letter-spacing: .06em;
-      font-weight: 750;
+      font-size: 30px;
+      line-height: 1.1;
+      font-weight: 800;
+      letter-spacing: .01em;
     }
 
-    .headline {
-      margin: 2.5mm 0 0;
-      color: var(--ink-blue);
-      font-family: var(--serif);
-      font-weight: 700;
-      font-size: 12px;
-      letter-spacing: .015em;
+    .identity { display: flex; flex-direction: column; min-width: 0; }
+    .masthead-tagline {
+      margin: 2.2mm 0 0;
+      color: #667085;
+      font-size: 13px;
+      font-weight: 600;
+      line-height: 1.45;
+      letter-spacing: .01em;
     }
-
+    /* 联系行:chip 胶囊(白底细边圆角) */
     .contact {
       display: flex;
-      max-width: 82mm;
       flex-wrap: wrap;
-      justify-content: flex-end;
-      gap: 1.5mm 3mm;
-      color: var(--gray-700);
-      font-size: 9.3px;
-      text-align: right;
+      justify-content: flex-start;
+      gap: 2mm 2.4mm;
+      margin-top: 2.4mm;
+      color: #1f2937;
+      font-size: 9.6px;
+      text-align: left;
+      max-width: none;
     }
-
-    .contact-item { white-space: nowrap; }
-    .contact-label { color: var(--gray-500); margin-right: 1mm; }
+    .contact-item {
+      white-space: nowrap;
+      display: inline-flex;
+      align-items: center;
+      gap: 1.4mm;
+      background: #f8fafc;
+      border: 1px solid #dbe2ea;
+      border-radius: 4px;
+      min-height: 6.4mm;
+      padding: .9mm 2.2mm;
+    }
+    .contact-item a { color: inherit; text-decoration: none; border-bottom: 0; }
+    .contact-item + .contact-item { margin-left: 0; }
 
     .professional-summary {
       margin-top: 3.2mm;
@@ -199,14 +323,21 @@
     .project-title { font-family: var(--serif); font-size: 12px; font-weight: 850; color: #1f4d70; }
     .project-subtitle { margin-left: 2mm; color: var(--gray-700); font-weight: 650; }
 
-    .fact-block { display: grid; grid-template-columns: 19mm minmax(0,1fr); gap: 1.8mm; margin-top: 1.1mm; }
-    .fact-label { color: var(--ink-blue); font-weight: 800; white-space: nowrap; }
+    /* 事实板块:标签与整段内容同行、顶格流动(非固定 label 列) */
+    .fact-block { margin-top: 1.1mm; }
+    .fact-block:first-child { margin-top: 0; }
     .fact-content { min-width: 0; }
-    .fact-list { margin: 0; padding-left: 4.2mm; }
-    .fact-list li { margin: 0 0 .65mm; padding-left: .5mm; }
-    .fact-list li::marker { color: var(--gray-500); }
+    .fact-lead { margin: 0 0 .4mm; }
+    .fact-lead .fact-label { color: var(--ink-blue); font-weight: 800; white-space: nowrap; }
+    /* 后续 bullet 条目:列表自成一列(bullet 前导),条目文本溢出换行回自身左缘(顶格),
+       不与首行 label 的内容列对齐 */
+    .fact-block .fact-list { margin: .4mm 0 0; padding-left: 3.6mm; }
+    .fact-block .fact-list li { margin: 0 0 .4mm; padding-left: .4mm; }
+    .fact-block .fact-list li::marker { color: var(--gray-500); }
+    /* 其余列表(cards/education 等)保持原间距 */
+    .fact-list { margin: 0; padding-left: 3.2mm; }
+    .fact-list li { margin: 0 0 .55mm; padding-left: .5mm; }
     .highlight { color: #101820; font-weight: 850; }
-    .keywords { color: var(--gray-700); font-family: var(--mono); font-size: 8.9px; overflow-wrap: anywhere; }
 
     .cards { display: grid; grid-template-columns: 1fr; gap: 2.4mm; }
     .card {
@@ -232,21 +363,41 @@
 
     .empty { color: var(--gray-500); font-style: italic; }
 
-    @page { size: A4; margin: 11mm 12mm 12mm; }
+    @page {
+      size: A4 portrait;
+      margin: 0;
+      @bottom-left { content: none; }
+      @bottom-center { content: none; }
+      @bottom-right { content: none; }
+      @top-left { content: none; }
+      @top-center { content: none; }
+      @top-right { content: none; }
+    }
     @media print {
       html, body { background: white; }
       body { font-size: 10.4px; }
-      .page { width: auto; min-height: auto; margin: 0; padding: 0; box-shadow: none; background: white; }
+      .page {
+        width: 210mm;
+        min-height: 297mm;
+        margin: 0;
+        padding: 12mm 13mm 13mm;
+        box-shadow: none;
+        background: white;
+        overflow: visible;
+      }
       a { color: inherit; border-bottom: 0; }
-      .company-bar, .education-row, .card { print-color-adjust: exact; -webkit-print-color-adjust: exact; }
-      .section-title, .company-bar, .project-title { break-after: avoid; }
+      .company-bar, .education-row, .card, .project, .compact-row {
+        print-color-adjust: exact;
+        -webkit-print-color-adjust: exact;
+        break-inside: avoid-page;
+      }
+      .section-title, .company-bar, .project-title { break-after: avoid-page; }
     }
 
     @media (max-width: 760px) {
       .page { width: 100%; min-height: 0; margin: 0; padding: 20px 16px; }
       .masthead, .masthead.has-photo { grid-template-columns: 1fr; align-items: start; }
       .photo-frame { width: 24mm; height: 28mm; }
-      .contact { justify-content: flex-start; text-align: left; max-width: none; }
       .compact-row { grid-template-columns: 1fr; gap: .8mm; }
       .company-bar { grid-template-columns: 1fr; }
       .company-right { justify-content: space-between; }
@@ -261,10 +412,16 @@
       'use strict';
       const data = JSON.parse(document.getElementById('resume-data').textContent);
       const root = document.getElementById('resume');
+      // Strip invisible Unicode chars that PDF/OCR sometimes injects
+      // (ZWSP, ZWNJ, ZWJ, BOM, soft hyphen, line/paragraph separators, etc.)
+      const INVISIBLE_RE = /[\u0000-\u0008\u000B-\u001F\u007F-\u009F\u00AD\u034F\u061C\u115F\u1160\u17B4\u17B5\u180B-\u180F\u200B-\u200F\u2028\u2029\u202A-\u202E\u2060-\u206F\u3000\u303F\uFE00-\uFE0F\uFEFF\uFFF0-\uFFFF\uE000-\uF8FF]/g;
+      const cleanText = (s) => String(s == null ? '' : s)
+        .replace(/[\u3000\u303F\u205F\u00A0]/g, ' ')
+        .replace(INVISIBLE_RE, '');
       const el = (tag, cls, text) => {
         const node = document.createElement(tag);
         if (cls) node.className = cls;
-        if (text !== undefined && text !== null) node.textContent = String(text);
+        if (text !== undefined && text !== null) node.textContent = cleanText(text);
         return node;
       };
       const safeUrl = value => {
@@ -326,7 +483,7 @@
       };
       const richText = (item, extraHighlights) => {
         const source = typeof item === 'string' ? { text: item, highlights: [] } : (item || {});
-        const text = String(source.text || '');
+        const text = cleanText(source.text || '');
         const terms = [...new Set([...(source.highlights || []), ...(extraHighlights || []), ...autoHighlightTerms(text)].map(String).map(value => value.trim()).filter(Boolean))];
         const ranges = [];
         terms.forEach(term => {
@@ -362,6 +519,10 @@
         root.append(wrap);
         return wrap;
       };
+      const sectionTitle = (key, fallback) => {
+        const custom = (data.section_titles || {})[key];
+        return custom || fallback;
+      };
       const bulletList = (items, extraHighlights) => {
         const ul = el('ul', 'fact-list');
         (items || []).forEach(item => {
@@ -371,14 +532,39 @@
         });
         return ul;
       };
+      // 经历条目内三级小标题(用户可改名;缺省值回退)
+      const labels = Object.assign(
+        { background: '背景', impact: '指标与效果', responsibilities: '我的职责' },
+        (data && data.labels) || {}
+      );
       const factBlock = (labelText, content, extraHighlights) => {
+        // 二级条目排版:首行 = 条目名 + 首条内容(无 bullet、无缩进);后续条目保留 bullet;
+        // 内容列统一与首行内容起始对齐(悬挂);非数组内容(Node)整体放置。
         const block = el('div', 'fact-block');
-        block.append(el('div', 'fact-label', labelText));
-        const body = el('div', 'fact-content');
-        if (Array.isArray(content)) body.append(bulletList(content, extraHighlights));
-        else if (content instanceof Node) body.append(content);
-        else body.textContent = content || '';
-        block.append(body);
+        const items = Array.isArray(content) ? content.filter(Boolean) : (content == null ? [] : [content]);
+        if (!items.length) return block;
+        if (items[0] instanceof Node) {
+          const body = el('div', 'fact-content');
+          body.append(items[0]);
+          block.append(body);
+          return block;
+        }
+        const contentEl = el('div', 'fact-content');
+        const lead = el('p', 'fact-lead');
+        lead.append(el('span', 'fact-label', labelText));
+        lead.append(richText(items[0], extraHighlights));
+        contentEl.append(lead);
+        block.append(contentEl);
+        if (items.length > 1) {
+          // 后续条目 bullet 列表独立于 label 悬挂列:溢出换行顶格回自身文本列
+          const ul = el('ul', 'fact-list');
+          items.slice(1).forEach(item => {
+            const li = el('li', '');
+            li.append(richText(item, extraHighlights));
+            ul.append(li);
+          });
+          block.append(ul);
+        }
         return block;
       };
 
@@ -386,18 +572,62 @@
       document.title = [p.name, p.headline].filter(Boolean).join('｜') || 'ASU 风格技术简历';
       const masthead = el('header', 'masthead');
       const identity = el('div', 'identity');
-      identity.append(el('h1', 'name', p.name || '姓名'));
-      identity.append(el('p', 'headline', p.headline || '技术方向'));
-      masthead.append(identity);
+      // 姓名行:名字 + 顶部标签(eyebrow)同一行;标签可绝对定位/调字号颜色(eyebrowX/Y 缺省时靠右)
+      const eyebrowText = p.eyebrow != null ? String(p.eyebrow).trim() : '';
+      const eyebrowSpacing = Number(p.eyebrowSpacing);
+      const eyebrowSpacingPx = isFinite(eyebrowSpacing) ? eyebrowSpacing : null;
+      const eyebrowFontSize = Number(p.eyebrowFontSize);
+      const eyebrowFontSizePx = isFinite(eyebrowFontSize) && eyebrowFontSize > 0 ? eyebrowFontSize : null;
+      const eyebrowColor = p.eyebrowColor ? String(p.eyebrowColor).trim() : '';
+      const eyebrowX = Number(p.eyebrowX);
+      const eyebrowY = Number(p.eyebrowY);
+      const hasFreePos = isFinite(eyebrowX) && isFinite(eyebrowY);
+      const nameRow = el('div', 'name-row');
+      nameRow.append(el('h1', 'name', p.name || '姓名'));
+      if (eyebrowText) {
+        const eyebrowEl = el('p', 'masthead-eyebrow', eyebrowText);
+        if (eyebrowSpacingPx !== null) eyebrowEl.style.letterSpacing = `${eyebrowSpacingPx}px`;
+        if (eyebrowFontSizePx !== null) eyebrowEl.style.fontSize = `${eyebrowFontSizePx}px`;
+        if (eyebrowColor) eyebrowEl.style.color = eyebrowColor;
+        if (hasFreePos) {
+          eyebrowEl.classList.add('free');
+          eyebrowEl.style.left = `${eyebrowX}%`;
+          eyebrowEl.style.top = `${eyebrowY}%`;
+        }
+        nameRow.append(eyebrowEl);
+      }
+      identity.append(nameRow);
+      // 联系方式紧随姓名:chip 式呈现;固定展示顺序 意向城市→邮箱→电话→MBTI,其余保持原相对顺序
       const contacts = el('div', 'contact');
+      const contactText = item => {
+        const label = (item.label || '').trim();
+        const value = (item.value != null ? String(item.value) : '').trim();
+        if (!value) return label;
+        return label ? `${label}：${value}` : value;
+      };
+      const contactKind = item => {
+        const hay = String((item.label || '') + ' ' + (item.value || '')).toLowerCase();
+        if (/意向城市|所在城市|城市|location/.test(hay)) return 0;
+        if (/邮箱|email|e-?mail|mail/.test(hay)) return 1;
+        if (/电话|手机|phone|tel/.test(hay)) return 2;
+        if (/mbti/.test(hay)) return 3;
+        return 4;
+      };
+      const sortedContacts = (p.contacts || [])
+        .map((item, idx) => ({ item, idx }))
+        .sort((a, b) => (contactKind(a.item) - contactKind(b.item)) || (a.idx - b.idx))
+        .map(entry => entry.item);
       if (p.location) contacts.append(el('span', 'contact-item', p.location));
-      (p.contacts || []).forEach(item => {
+      sortedContacts.forEach(item => {
         const wrap = el('span', 'contact-item');
-        if (item.label) wrap.append(el('span', 'contact-label', item.label));
-        wrap.append(link(item.value || item.label || '', item.url, ''));
+        wrap.append(link(contactText(item), item.url || '', ''));
         contacts.append(wrap);
       });
-      masthead.append(contacts);
+      identity.append(contacts);
+      // 一句话简介(tagline),兼容旧 headline 数据
+      const taglineText = (p.tagline != null && String(p.tagline).trim()) || (p.headline != null && String(p.headline).trim());
+      if (taglineText) identity.append(el('p', 'masthead-tagline', taglineText));
+      masthead.append(identity);
       const photo = p.photo || {};
       if (photo.confirmed && /^data:image\/(?:png|jpeg|webp);base64,/i.test(String(photo.src || ''))) {
         const frame = el('div', 'photo-frame');
@@ -414,24 +644,118 @@
       }
       root.append(masthead);
 
-      if ((data.education || []).length) {
-        const s = section('教育经历');
-        data.education.forEach(item => {
-          const row = el('div', 'education-row');
-          const main = el('div', 'education-main');
-          const head = el('div', '');
-          head.append(el('span', 'education-school', item.institution));
-          head.append(el('span', 'education-program', [item.program, item.degree].filter(Boolean).join('｜')));
-          main.append(head);
-          const meta = [];
-          if (item.degree_awarder) meta.push(`学位授予方：${item.degree_awarder}`);
-          if (item.partner) meta.push(`合作方：${item.partner}（${item.partner_type || '合作类型未说明'}）`);
-          if (meta.length) main.append(el('div', 'education-meta', meta.join('；')));
-          if ((item.bullets || []).length) main.append(bulletList(item.bullets));
-          row.append(main, el('div', 'dates', item.dates || ''));
-          s.append(row);
-        });
+      // 作品集/网盘链接行:显示在头部区块正下方(分页引擎视其为独立叶子,随头部排第一页)
+      const portfolio = p.portfolio || {};
+      const portfolioUrl = portfolio.url ? String(portfolio.url).trim() : '';
+      if (portfolioUrl) {
+        const row = el('div', 'portfolio-line');
+        row.append(el('span', 'portfolio-label', '作品集'));
+        const a = link(portfolio.displayName ? String(portfolio.displayName) : portfolioUrl.replace(/^https?:\/\//, ''), portfolioUrl, 'portfolio-link');
+        row.append(a);
+        const portfolioCode = portfolio.code ? String(portfolio.code).trim() : '';
+        if (portfolioCode) row.append(el('span', 'portfolio-code', `提取码：${portfolioCode}`));
+        root.append(row);
       }
+
+      const renderBuiltInSection = (key, defaultTitle, renderer) => {
+        if (!(data[key] || []).length) return;
+        const s = section(sectionTitle(key, defaultTitle));
+        renderer(s);
+      };
+
+      // Render education & experience in layout order
+      const builtInRenderers = {
+        education: s => {
+          data.education.forEach(item => {
+            const row = el('div', 'education-row');
+            const main = el('div', 'education-main');
+            const head = el('div', '');
+            head.append(el('span', 'education-school', item.institution));
+            head.append(el('span', 'education-program', [item.program, item.degree].filter(Boolean).join('｜')));
+            main.append(head);
+            const meta = [];
+            if (item.degree_awarder) meta.push(`学位授予方：${item.degree_awarder}`);
+            if (item.partner) meta.push(`合作方：${item.partner}（${item.partner_type || '合作类型未说明'}）`);
+            if (meta.length) main.append(el('div', 'education-meta', meta.join('；')));
+            if ((item.bullets || []).length) main.append(bulletList(item.bullets));
+            row.append(main, el('div', 'dates', item.dates || ''));
+            s.append(row);
+          });
+        },
+        experience: s => {
+          const automaticExperienceTones = ['red', 'gray', 'blue'];
+          data.experience.forEach((exp, experienceIndex) => {
+            const manualTone = exp.brandMode === 'manual' && ['red','blue','green','gray'].includes(exp.brand) ? exp.brand : null;
+            const experienceTone = manualTone || automaticExperienceTones[experienceIndex % automaticExperienceTones.length];
+            const wrap = el('article', `experience tone-${experienceTone}`);
+            const bar = el('div', `company-bar brand-${experienceTone}`);
+            const left = el('div', 'company-left');
+            const logo = companyLogo(exp.companyNormalizedName || exp.company);
+            if (logo) left.append(logo);
+            left.append(el('span', 'company-name', exp.company));
+            if (exp.team) left.append(el('span', 'company-team', `｜${exp.team}`));
+            const experienceLinks = [...(exp.links || []), ...(exp.link ? [exp.link] : [])].filter(item => item && item.url && allowedVerification(item.verification || 'user_attested'));
+            experienceLinks.forEach(item => left.append(link(item.label || '作品链接', item.url, 'company-link')));
+            if ((exp.tags || []).length) left.append(el('span', 'company-tags', `｜${exp.tags.join(' · ')}`));
+            const right = el('div', 'company-right');
+            right.append(el('span', 'dates', exp.dates || ''));
+            bar.append(left, right);
+            wrap.append(bar);
+            (exp.projects || []).forEach(project => {
+              const block = el('div', 'project');
+              const title = el('div', '');
+              title.append(el('span', 'project-title', project.name));
+              if (project.subtitle) title.append(el('span', 'project-subtitle', `— ${project.subtitle}`));
+              block.append(title);
+              if ((project.background || []).length) block.append(factBlock(labels.background + '：', project.background));
+              const responsibilityItems = [...(project.responsibilities || []), ...(project.actions || [])];
+              if ((project.impact || []).length) block.append(factBlock(labels.impact + '：', project.impact));
+              if (responsibilityItems.length) block.append(factBlock(labels.responsibilities + '：', responsibilityItems));
+              wrap.append(block);
+            });
+            s.append(wrap);
+          });
+        }
+      };
+
+      (data.layout || [{ key: 'education' }, { key: 'experience' }]).forEach(layoutItem => {
+        if (!layoutItem || typeof layoutItem !== 'object') return;
+        const key = layoutItem.key;
+        const defaults = { education: '教育经历', experience: '实习 / 工作经历' };
+        
+        if (builtInRenderers[key]) {
+          renderBuiltInSection(key, defaults[key], builtInRenderers[key]);
+        } else if (key && key.startsWith('custom-')) {
+          // Custom section reference
+          const idx = parseInt(key.slice(7), 10);
+          if (!isNaN(idx) && data.sections && data.sections[idx]) {
+            const sectionData = data.sections[idx];
+            const customTitle = sectionData.title || `自定义栏目 ${idx + 1}`;
+            const customItems = Array.isArray(sectionData.items) ? sectionData.items : [];
+            if (customTitle || customItems.length) {
+              const s = section(sectionTitle('custom', customTitle));
+              if (!customItems.length) {
+                s.append(el('div', 'empty', '（暂无条目）'));
+              } else {
+                const cards = el('div', 'cards');
+                customItems.forEach(item => {
+                  const source = (item && typeof item === 'object') ? item : { title: item };
+                  const customCard = el('article', 'card');
+                  const main = el('div', '');
+                  const heading = el('div', '');
+                  heading.append(el('span', 'card-title', source.title || '未命名条目'));
+                  if (source.dates) heading.append(el('span', 'card-role', `｜${source.dates}`));
+                  main.append(heading);
+                  if ((source.bullets || []).filter(Boolean).length) main.append(bulletList(source.bullets));
+                  customCard.append(main);
+                  cards.append(customCard);
+                });
+                s.append(cards);
+              }
+            }
+          }
+        }
+      });
 
       const positioningSummary = p.summary && p.summary.text && allowedVerification(p.summary.verification) ? p.summary : null;
       if (positioningSummary) {
@@ -442,43 +766,6 @@
         body.append(paragraph);
         summary.append(body);
         root.append(summary);
-      }
-
-      if ((data.experience || []).length) {
-        const s = section('实习 / 工作经历');
-        const automaticExperienceTones = ['red', 'gray', 'blue'];
-        data.experience.forEach((exp, experienceIndex) => {
-          const manualTone = exp.brandMode === 'manual' && ['red','blue','green','gray'].includes(exp.brand) ? exp.brand : null;
-          const experienceTone = manualTone || automaticExperienceTones[experienceIndex % automaticExperienceTones.length];
-          const wrap = el('article', `experience tone-${experienceTone}`);
-          const bar = el('div', `company-bar brand-${experienceTone}`);
-          const left = el('div', 'company-left');
-          const logo = companyLogo(exp.companyNormalizedName || exp.company);
-          if (logo) left.append(logo);
-          left.append(el('span', 'company-name', exp.company));
-          if (exp.team) left.append(el('span', 'company-team', `｜${exp.team}`));
-          const experienceLinks = [...(exp.links || []), ...(exp.link ? [exp.link] : [])].filter(item => item && item.url && allowedVerification(item.verification || 'user_attested'));
-          experienceLinks.forEach(item => left.append(link(item.label || '作品链接', item.url, 'company-link')));
-          if ((exp.tags || []).length) left.append(el('span', 'company-tags', `｜${exp.tags.join(' · ')}`));
-          const right = el('div', 'company-right');
-          right.append(el('span', 'dates', exp.dates || ''));
-          bar.append(left, right);
-          wrap.append(bar);
-          (exp.projects || []).forEach(project => {
-            const block = el('div', 'project');
-            const title = el('div', '');
-            title.append(el('span', 'project-title', project.name));
-            if (project.subtitle) title.append(el('span', 'project-subtitle', `— ${project.subtitle}`));
-            block.append(title);
-            if ((project.background || []).length) block.append(factBlock('背景：', project.background));
-            const responsibilityItems = [...(project.responsibilities || []), ...(project.actions || [])];
-            if ((project.impact || []).length) block.append(factBlock('指标与效果：', project.impact));
-            if (responsibilityItems.length) block.append(factBlock('我的职责：', responsibilityItems));
-            if ((project.keywords || []).length) block.append(factBlock('技术关键词：', el('div', 'keywords', project.keywords.join(' / '))));
-            wrap.append(block);
-          });
-          s.append(wrap);
-        });
       }
 
       const renderCards = (title, items, isOpenSource) => {
@@ -525,6 +812,193 @@
         s.append(grid);
       }
 
+    })();
+        // 事实板块悬挂(渲染后、分页前):内容列从 label 结束位置对齐,label 留在最左
+      (function () {
+        var fc = document.querySelectorAll('#resume .fact-lead .fact-label');
+        for (var i = 0; i < fc.length; i++) {
+          var lbl = fc[i];
+          var ce = lbl.closest ? lbl.closest('.fact-content') : null;
+          if (!ce || ce.dataset.hung) continue;
+          ce.dataset.hung = '1';
+          var w = lbl.getBoundingClientRect().width || 0;
+          if (w < 1) continue;
+          var hg = w + 2;
+          ce.style.paddingLeft = hg + 'px';
+          ce.style.textIndent = '-' + hg + 'px';
+        }
+      })();
+</script>
+  <script>
+    // ===== A4 多页分页引擎 (sushen paged engine v6 · flow) =====
+    // 读取 resume-data.page_setup;把模板渲染内容按“文档序”连续流式装进多张 210x297mm A4 sheet。
+    // v6 关键改动:不再把整节 wrapper 当一个页流单元(那样一节放不下整节就整节换页,造成“每板块
+    // 单开一页 + 大片留白 + 不连贯”)。改为把 section/.cards/.compact-grid 展平成叶子
+    // (education-row/experience/card/compact-row/h2…) 按文档顺序尽量填满每页,放不下的叶子
+    // 整体去下一页;同一节的内容可以跨页续排,节标题不会孤悬页尾。预览/HTML/PDF 共用本模板。
+    (function () {
+      'use strict';
+      var rawEl = document.getElementById('resume-data');
+      if (!rawEl) return;
+      var data = null;
+      try { data = JSON.parse(rawEl.textContent); } catch (_) { return; }
+      // 门控:仅当数据显式带 page_setup 才启用多页引擎。editor 经 normalizeData 恒注入
+      // 默认 page_setup,故其预览/下载/导出恒分页;而 transform 等直连模板的数据没有该字段,
+      // 保持原有单页 .page 渲染(避免无 page_setup 的 HTML 被静默改成带页码的分页)。
+      if (!data || typeof data.page_setup !== 'object' || data.page_setup === null || Array.isArray(data.page_setup)) return;
+      var rawSetup = data.page_setup || {};
+      var num = function (v, d) { v = Number(v); return isFinite(v) ? Math.min(60, Math.max(0, v)) : d; };
+      var setup = {
+        marginTopMm: num(rawSetup.marginTopMm, 12),
+        marginBottomMm: num(rawSetup.marginBottomMm, 13),
+        marginLeftMm: num(rawSetup.marginLeftMm, 13),
+        marginRightMm: num(rawSetup.marginRightMm, 13),
+        headerText: rawSetup.headerText || '',
+        footerText: rawSetup.footerText || '',
+        showPageNumbers: rawSetup.showPageNumbers !== false,
+        smart: rawSetup.smartPacking === true
+      };
+      var host = document.getElementById('resume');
+      if (!host || !host.firstElementChild) return;
+
+      // 二级内容字号/行距:仅作用于各栏目内容条目(事实/要点/职责等 li 与事实导出行),
+      // 栏目标题/头部/日期等不随动。注入 CSS 变量,默认值=None(不覆盖)。
+      var contentFs = Number(rawSetup.contentFontSize);
+      var contentLh = Number(rawSetup.contentLineHeight);
+      var contentRules = '';
+      if (isFinite(contentFs) && contentFs > 0) contentRules += '--content-fs:' + contentFs + 'px;';
+      if (isFinite(contentLh) && contentLh > 0) contentRules += '--content-lh:' + contentLh + ';';
+      if (contentRules) {
+        var styleNode = document.createElement('style');
+        styleNode.textContent = '#resume {' + contentRules + '}';
+        document.head.appendChild(styleNode);
+      }
+
+      // ---- 叶子化      // ---- 叶子化:把内容容器(section wrapper / .cards / .compact-grid)展平成叶子单元,
+      // 叶子 = 不可再拆的排版块(标题/教育行/经历/卡片/奖项技能行/摘要/masthead)。
+      // 保持文档顺序,叶子之间原有相邻 margin 由模板 CSS 提供,跨页续排时自然衔接。
+      var leafUnits = [];
+      function flattenNode(node) {
+        if (!node) return;
+        var cls = ' ' + (node.className || '') + ' ';
+        if (node.children && node.children.length && /(^|\s)(section|cards|compact-grid)(\s|$)/.test(cls)) {
+          Array.prototype.slice.call(node.children).forEach(function (child) { flattenNode(child); });
+          return;
+        }
+        leafUnits.push(node);
+      }
+      Array.prototype.slice.call(host.children).forEach(flattenNode);
+      if (!leafUnits.length) return;
+
+      function mm(v) { return Number(v || 0) + 'mm'; }
+      function buildSheet() {
+        var sheet = document.createElement('main');
+        sheet.className = 'sushen-sheet';
+        sheet.style.setProperty('--sheet-pt', mm(setup.marginTopMm));
+        sheet.style.setProperty('--sheet-pr', mm(setup.marginRightMm));
+        sheet.style.setProperty('--sheet-pb', mm(setup.marginBottomMm));
+        sheet.style.setProperty('--sheet-pl', mm(setup.marginLeftMm));
+        var frame = document.createElement('div'); frame.className = 'sushen-frame';
+        var head = document.createElement('header'); head.className = 'sushen-head';
+        if (setup.headerText) head.textContent = setup.headerText;
+        var content = document.createElement('div'); content.className = 'sushen-content';
+        var foot = document.createElement('footer'); foot.className = 'sushen-foot';
+        var ft = document.createElement('span'); ft.className = 'sushen-foot-text';
+        if (setup.footerText) ft.textContent = setup.footerText;
+        var pg = document.createElement('span'); pg.className = 'sushen-pager';
+        if (setup.showPageNumbers) pg.textContent = '';
+        foot.append(ft, pg);
+        frame.append(head, content, foot);
+        sheet.append(frame);
+        return { sheet: sheet, content: content, pg: pg };
+      }
+
+      host.classList.add('sushen-paged');
+      if (setup.smart) host.classList.add('sushen-smart');
+      host.removeAttribute('style');
+      var page = buildSheet();
+      host.append(page.sheet);
+
+      function newPage() {
+        page = buildSheet();
+        host.append(page.sheet);
+      }
+      // 用叶子自身的几何位置判断是否越过本页内容区(比 scrollHeight 抗 margin 塌陷更直观)
+      function leafFits(leaf) {
+        var contentRect = page.content.getBoundingClientRect();
+        var rect = leaf.getBoundingClientRect();
+        // 容差约 1mm(96dpi ≈ 3.78px),避免亚毫米余量导致整块换页/标题搬走
+        return rect.bottom - contentRect.top <= contentRect.height + 4;
+      }
+      // 从当前页撤下叶子(含孤悬标题)的辅助
+      function pullLast() {
+        var last = page.content.lastElementChild;
+        if (last) page.content.removeChild(last);
+        return last;
+      }
+
+      var pendingTitle = null; // 刚放到页尾的节标题,若其后第一块放不下则随块去下一页
+      leafUnits.forEach(function (leaf) {
+        var cls = ' ' + (leaf.className || '') + ' ';
+        if (/(^|\s)section-title(\s|$)/.test(cls)) {
+          // 标题也先放入当前页再测量(与普通叶一致,坐标系为当前页 content);
+          // 放不下说明当前页已满,标题与后续内容一起去下一页,避免孤悬页尾。
+          page.content.append(leaf);
+          if (!leafFits(leaf)) {
+            page.content.removeChild(leaf);
+            newPage();
+            page.content.append(leaf);
+          }
+          pendingTitle = leaf;
+          return;
+        }
+        // 普通叶子
+        page.content.append(leaf);
+        if (leafFits(leaf)) { pendingTitle = null; return; }
+        // 放不下:【智能排版】对该页做一次单档压缩再试放(把板块整体留下);压缩是整页级且只试一档,
+        // 仍不行则换页——避免多重压缩把版面压得过紧或无限重试
+        page.content.removeChild(leaf);
+        if (setup.smart && !page.content.classList.contains('sushen-compact')) {
+          page.content.classList.add('sushen-compact');
+          page.content.append(leaf);
+          if (leafFits(leaf)) { pendingTitle = null; return; }
+          page.content.removeChild(leaf);
+        }
+        // 换页:先把刚放的和可能孤悬的标题都撤下
+        var titleMoved = null;
+        var last = page.content.lastElementChild;
+        if (pendingTitle && last === pendingTitle) {
+          page.content.removeChild(pendingTitle);
+          titleMoved = pendingTitle;
+        }
+        newPage();
+        if (titleMoved) page.content.append(titleMoved);
+        page.content.append(leaf);
+        if (!leafFits(leaf)) {
+          // 空页仍放不下 → 单叶子超高(极少):叶子是二级板块保持完整,打溢出标记并裁切兜底
+          page.content.removeChild(leaf);
+          page.content.append(leaf);
+          page.sheet.classList.add('sushen-overflow');
+        }
+        pendingTitle = null;
+      });
+
+      // 清掉被掏空的容器残壳(masthead/section/.cards 等),避免页面上方残留空隙
+      Array.prototype.slice.call(host.children).forEach(function (child) {
+        var cls = child.className || '';
+        if (cls.indexOf('sushen-sheet') === -1) child.remove();
+      });
+
+      // 页码回填 + 空页脚隐藏
+      var sheets = Array.prototype.slice.call(host.querySelectorAll(':scope > .sushen-sheet'));
+      var total = sheets.length;
+      sheets.forEach(function (sh, idx) {
+        var pager = sh.querySelector('.sushen-pager');
+        if (pager && setup.showPageNumbers) pager.textContent = '第 ' + (idx + 1) + ' 页 · 共 ' + total + ' 页';
+        var foot = sh.querySelector('.sushen-foot');
+        var ftEl = sh.querySelector('.sushen-foot-text');
+        if (foot && !setup.showPageNumbers && !(ftEl && ftEl.textContent)) foot.style.display = 'none';
+      });
     })();
   </script>
 </body>
